@@ -1,4 +1,4 @@
-import React from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '../components/ui/Button';
@@ -144,11 +144,73 @@ const processSteps = [
 
 const Landing = () => {
   const navigate = useNavigate();
+  // Interactive background grid highlight state with trailing fade cells
+  interface GridCell { id: number; row: number; col: number; createdAt: number; }
+  const [cells, setCells] = useState<GridCell[]>([]);
+  const cellLifespan = 550; // ms visible duration (slightly above 0.5s target)
+  const [cellId, setCellId] = useState(0);
+
+  useEffect(() => {
+    const rowHeightPct = 5; // matches horizontal line spacing
+    const colWidthPct = 8.33; // matches vertical line spacing
+  const rows = 19; // 20 lines -> 19 cells
+  const cols = 11; // 12 lines -> 11 cells
+
+    let frameRequested = false;
+    let pendingEvent: MouseEvent | null = null;
+
+    const process = () => {
+      if (!pendingEvent) return;
+      const e = pendingEvent;
+      pendingEvent = null;
+      frameRequested = false;
+      const xPct = (e.clientX / window.innerWidth) * 100;
+      const yPct = (e.clientY / window.innerHeight) * 100;
+      const col = Math.min(cols - 1, Math.max(0, Math.floor(xPct / colWidthPct)));
+      const row = Math.min(rows - 1, Math.max(0, Math.floor(yPct / rowHeightPct)));
+      setCells(prev => {
+        const last = prev[prev.length - 1];
+        if (last && last.row === row && last.col === col) return prev; // no change
+        const now = Date.now();
+        const newCell: GridCell = { id: cellId + 1, row, col, createdAt: now };
+        setCellId(id => id + 1);
+        // prune any duplicates of same position except last
+        const filtered = prev.filter(c => !(c.row === row && c.col === col));
+        return [...filtered, newCell].slice(-120); // safety cap
+      });
+    };
+
+    const handleMove = (e: MouseEvent) => {
+      pendingEvent = e;
+      if (!frameRequested) {
+        frameRequested = true;
+        requestAnimationFrame(process);
+      }
+    };
+    const handleLeave = () => {
+      // let existing cells fade out naturally; no new additions
+    };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseleave', handleLeave);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseleave', handleLeave);
+    };
+  }, [cellId]);
+
+  // Prune expired cells periodically
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      setCells(prev => prev.filter(c => now - c.createdAt < cellLifespan));
+    }, 70);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
   <div className="min-h-screen bg-white text-black">
       {/* Background Pattern */}
-      <div className="fixed inset-0 z-0">
+      <div className="fixed inset-0 z-0 select-none pointer-events-none">
         {/* Horizontal Lines */}
         <div className="absolute inset-0">
           {[...Array(20)].map((_, i) => (
@@ -174,6 +236,32 @@ const Landing = () => {
         <div className="absolute bottom-20 left-0 w-full h-px bg-neutral-200" />
         <div className="absolute top-0 left-1/4 w-px h-full bg-neutral-200" />
         <div className="absolute top-0 right-1/4 w-px h-full bg-neutral-200" />
+        {/* Trailing cell highlights (pixel pattern) */}
+        {cells.map(c => {
+          const age = Date.now() - c.createdAt;
+          const lifeRatio = Math.min(1, age / cellLifespan);
+          // Ease opacity with slight hold then fade (using quadratic curve)
+          const opacity = lifeRatio < 0.2 ? 0.9 : 0.9 * (1 - Math.pow((lifeRatio - 0.2) / 0.8, 1.2));
+          return (
+            <div
+              key={c.id}
+              className="absolute will-change-transform will-change-opacity"
+              style={{
+                top: `${c.row * 5}%`,
+                left: `${c.col * 8.33}%`,
+                width: '8.33%',
+                height: '5%',
+                backgroundImage:
+                  'repeating-linear-gradient(0deg,#e5e5e5 0 2px,transparent 2px 4px),repeating-linear-gradient(90deg,#e5e5e5 0 2px,transparent 2px 4px)',
+                backgroundBlendMode: 'multiply',
+                boxShadow: 'inset 0 0 0 1px rgba(0,0,0,0.05)',
+                opacity,
+                filter: 'contrast(1.05) brightness(1.02)',
+                transition: 'opacity 120ms linear'
+              }}
+            />
+          );
+        })}
       </div>
 
       <PageLayout>
