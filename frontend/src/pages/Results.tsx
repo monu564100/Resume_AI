@@ -224,14 +224,35 @@ const Results: React.FC = () => {
                       Improvement Suggestions
                     </h2>
                     <div className="space-y-3">
-                      {improvementSuggestions.map((suggestion, index) => <div key={index} className="flex items-start">
-                          <div className="flex-shrink-0 h-5 w-5 rounded-full bg-secondary-500/20 flex items-center justify-center mr-3 mt-0.5">
-                            <span className="text-secondary-300 text-xs font-bold">
-                              {index + 1}
-                            </span>
+                      {improvementSuggestions.map((suggestion, index) => {
+                        // Handle both string and object formats
+                        const suggestionText = typeof suggestion === 'string' 
+                          ? suggestion 
+                          : suggestion?.suggestion || suggestion?.text || 'No suggestion available';
+                        
+                        return (
+                          <div key={index} className="flex items-start">
+                            <div className="flex-shrink-0 h-5 w-5 rounded-full bg-secondary-500/20 flex items-center justify-center mr-3 mt-0.5">
+                              <span className="text-secondary-300 text-xs font-bold">
+                                {index + 1}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <p className="text-gray-300">{suggestionText}</p>
+                              {typeof suggestion === 'object' && suggestion?.category && (
+                                <span className="text-xs text-gray-400 mt-1 block">
+                                  Category: {suggestion.category}
+                                </span>
+                              )}
+                              {typeof suggestion === 'object' && suggestion?.impact && (
+                                <span className="text-xs text-secondary-400 mt-1 block">
+                                  Impact: {suggestion.impact}
+                                </span>
+                              )}
+                            </div>
                           </div>
-                          <p className="text-gray-300">{suggestion}</p>
-                        </div>)}
+                        );
+                      })}
                     </div>
                   </Card>}
               </motion.div>}
@@ -379,18 +400,47 @@ const Results: React.FC = () => {
                       Resume Improvement Suggestions
                     </h2>
                     <div className="space-y-6">
-                      {improvementSuggestions.map((suggestion, index) => <div key={index} className="bg-dark-50 rounded-lg p-4">
-                          <div className="flex items-start">
-                            <div className="flex-shrink-0 h-8 w-8 rounded-full bg-secondary-500/20 flex items-center justify-center mr-4">
-                              <span className="text-secondary-300 font-bold">
-                                {index + 1}
-                              </span>
-                            </div>
-                            <div>
-                              <p className="text-gray-300">{suggestion}</p>
+                      {improvementSuggestions.map((suggestion: any, index: number) => {
+                        // Handle both string and object formats
+                        const suggestionText = typeof suggestion === 'string' 
+                          ? suggestion 
+                          : suggestion?.suggestion || suggestion?.text || 'No suggestion available';
+                        
+                        return (
+                          <div key={index} className="bg-dark-50 rounded-lg p-4">
+                            <div className="flex items-start">
+                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-secondary-500/20 flex items-center justify-center mr-4">
+                                <span className="text-secondary-300 font-bold">
+                                  {index + 1}
+                                </span>
+                              </div>
+                              <div className="flex-1">
+                                <p className="text-gray-300">{suggestionText}</p>
+                                {typeof suggestion === 'object' && suggestion?.category && (
+                                  <span className="text-xs text-gray-400 mt-1 block">
+                                    Category: {suggestion.category}
+                                  </span>
+                                )}
+                                {typeof suggestion === 'object' && suggestion?.impact && (
+                                  <span className="text-xs text-secondary-400 mt-1 block">
+                                    Impact: {suggestion.impact}
+                                  </span>
+                                )}
+                                {typeof suggestion === 'object' && suggestion?.difficulty && (
+                                  <span className="text-xs text-gray-500 mt-1 block">
+                                    Difficulty: {suggestion.difficulty}
+                                  </span>
+                                )}
+                                {typeof suggestion === 'object' && suggestion?.estimatedTime && (
+                                  <span className="text-xs text-gray-500 mt-1 block">
+                                    Est. Time: {suggestion.estimatedTime}
+                                  </span>
+                                )}
+                              </div>
                             </div>
                           </div>
-                        </div>)}
+                        );
+                      })}
                     </div>
                   </Card> : <Card variant="glass" className="mb-8">
                     <h2 className="text-2xl font-bold mb-6">

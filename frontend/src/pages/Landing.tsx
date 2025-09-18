@@ -7,110 +7,101 @@ import { Container } from '../components/ui/Container';
 import { PageLayout } from '../components/layout/PageLayout';
 import { ImageGallery } from '../components/ui/ImageGallery';
 import { 
-  UploadCloudIcon, 
-  BarChartIcon, 
-  TargetIcon, 
-  CheckCircleIcon,
-  ArrowRightIcon,
-  SparklesIcon,
-  TrendingUpIcon,
-  ShieldCheckIcon,
-  UsersIcon,
-  BrainIcon
+  UploadCloud as UploadCloudIcon, 
+  BarChart as BarChartIcon,
+  Sparkles as SparklesIcon,
+  ArrowRight as ArrowRightIcon,
+  Brain as BrainIcon,
+  Target as TargetIcon
 } from 'lucide-react';
-const Landing: React.FC = () => {
+
+// Animation variants
+const staggerContainer = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1
+    }
+  }
+};
+
+const fadeInUp = {
+  hidden: { opacity: 0, y: 20 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.5 } }
+};
+
+const scaleIn = {
+  hidden: { opacity: 0, scale: 0.9 },
+  show: { opacity: 1, scale: 1, transition: { duration: 0.5 } }
+};
+
+// Data arrays
+const stats = [
+  { number: '98%', label: 'Accuracy Rate', icon: <BarChartIcon size={24} /> },
+  { number: '10K+', label: 'Resumes Analyzed', icon: <UploadCloudIcon size={24} /> },
+  { number: '24h', label: 'Response Time', icon: <SparklesIcon size={24} /> },
+  { number: '4.9/5', label: 'User Rating', icon: <SparklesIcon size={24} /> }
+];
+
+const features = [
+  {
+    title: 'ATS Optimization',
+    description: 'Ensure your resume passes through automated tracking systems used by top companies.',
+    icon: <BarChartIcon size={32} />,
+    gradient: 'from-blue-500/10 to-cyan-500/10'
+  },
+  {
+    title: 'Skill Gap Analysis',
+    description: 'Identify missing skills for your dream job and get personalized learning recommendations.',
+    icon: <BrainIcon size={32} />,
+    gradient: 'from-purple-500/10 to-pink-500/10'
+  },
+  {
+    title: 'Job Matching',
+    description: 'Get matched with the perfect opportunities based on your skills and experience.',
+    icon: <TargetIcon size={32} />,
+    gradient: 'from-orange-500/10 to-red-500/10'
+  },
+  {
+    title: 'Resume Score',
+    description: 'Receive a comprehensive score and detailed feedback to improve your resume.',
+    icon: <SparklesIcon size={32} />,
+    gradient: 'from-green-500/10 to-emerald-500/10'
+  }
+];
+
+const testimonials = [
+  {
+    content: 'The AI analysis helped me identify exactly what was missing from my resume. Landed 3 interviews in 2 weeks!',
+    name: 'Priya Sharma',
+    role: 'Software Developer',
+    company: 'TechMahindra',
+    rating: 5
+  },
+  {
+    content: 'The ATS optimization feature is a game-changer. Finally understand why my applications were getting rejected.',
+    name: 'Rahul Verma',
+    role: 'Product Manager',
+    company: 'Paytm',
+    rating: 5
+  },
+  {
+    content: 'The skill gap analysis showed me exactly what I needed to learn to advance my career. Incredibly valuable!',
+    name: 'Anjali Patel',
+    role: 'Data Scientist',
+    company: 'Flipkart',
+    rating: 5
+  }
+];
+
+const Landing = () => {
   const navigate = useNavigate();
-  
-  const features = [
-    {
-      icon: <BrainIcon size={28} className="text-primary" />,
-      title: 'AI-Powered Analysis',
-      description: 'Advanced machine learning algorithms analyze your resume to extract key insights and provide personalized recommendations.',
-      gradient: 'from-blue-500/20 to-purple-500/20'
-    },
-    {
-      icon: <TrendingUpIcon size={28} className="text-emerald-400" />,
-      title: 'Skills Enhancement',
-      description: 'Identify skill gaps and receive targeted suggestions to improve your professional profile and market value.',
-      gradient: 'from-emerald-500/20 to-teal-500/20'
-    },
-    {
-      icon: <TargetIcon size={28} className="text-orange-400" />,
-      title: 'Smart Job Matching',
-      description: 'Get matched with relevant opportunities in the Indian job market based on your skills and experience.',
-      gradient: 'from-orange-500/20 to-red-500/20'
-    },
-    {
-      icon: <ShieldCheckIcon size={28} className="text-purple-400" />,
-      title: 'ATS Optimization',
-      description: 'Ensure your resume passes Applicant Tracking Systems with our comprehensive compatibility analysis.',
-      gradient: 'from-purple-500/20 to-pink-500/20'
-    }
-  ];
 
-  const stats = [
-    { number: '10K+', label: 'Resumes Analyzed', icon: <UploadCloudIcon size={24} /> },
-    { number: '95%', label: 'Success Rate', icon: <CheckCircleIcon size={24} /> },
-    { number: '500+', label: 'Companies', icon: <UsersIcon size={24} /> },
-    { number: '24/7', label: 'AI Support', icon: <SparklesIcon size={24} /> }
-  ];
-
-  const testimonials = [
-    {
-      name: 'Priya Sharma',
-      role: 'Software Engineer',
-      company: 'TCS',
-      content: 'This tool helped me land my dream job! The AI insights were incredibly accurate and actionable.',
-      rating: 5
-    },
-    {
-      name: 'Rahul Patel',
-      role: 'Data Scientist',
-      company: 'Infosys',
-      content: 'The job matching feature is phenomenal. I found opportunities I never knew existed.',
-      rating: 5
-    },
-    {
-      name: 'Anjali Singh',
-      role: 'Product Manager',
-      company: 'Wipro',
-      content: 'Professional, fast, and incredibly insightful. Highly recommended for career growth.',
-      rating: 5
-    }
-  ];
-
-  const staggerContainer = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
-  };
-
-  const fadeInUp = {
-    hidden: { opacity: 0, y: 30 },
-    show: { 
-      opacity: 1, 
-      y: 0,
-      transition: { duration: 0.6, ease: "easeOut" }
-    }
-  };
-
-  const scaleIn = {
-    hidden: { opacity: 0, scale: 0.8 },
-    show: { 
-      opacity: 1, 
-      scale: 1,
-      transition: { duration: 0.5, ease: "easeOut" }
-    }
-  };
   return (
     <PageLayout>
       {/* Hero Section */}
-      <section className="relative py-20 md:py-32 lg:py-40 overflow-hidden">
-        {/* Background Effects */}
-        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-secondary/5" />
-        <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/10 rounded-full blur-3xl" />
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden pt-20">
         <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-secondary/10 rounded-full blur-3xl" />
         
         <Container className="relative z-10">
@@ -447,104 +438,5 @@ const Landing: React.FC = () => {
     </PageLayout>
   );
 };
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">
-                      Upload Your Resume
-                    </h3>
-                    <p className="text-gray-400">
-                      Simply upload your resume in PDF or DOCX format. Our
-                      system will securely process your document.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary-500/20 flex items-center justify-center mr-4 mt-1">
-                    <span className="text-primary font-bold">2</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">AI Analysis</h3>
-                    <p className="text-gray-400">
-                      Our advanced AI analyzes your skills, experience, and
-                      qualifications to generate comprehensive insights.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start">
-                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-primary-500/20 flex items-center justify-center mr-4 mt-1">
-                    <span className="text-primary font-bold">3</span>
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-semibold mb-2">
-                      Get Personalized Results
-                    </h3>
-                    <p className="text-gray-400">
-                      Receive detailed feedback, career recommendations, and
-                      actionable steps to improve your resume.
-                    </p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-            <motion.div className="flex-1" initial={{
-            opacity: 0,
-            x: 30
-          }} whileInView={{
-            opacity: 1,
-            x: 0
-          }} viewport={{
-            once: true
-          }} transition={{
-            duration: 0.6
-          }}>
-              <Card variant="glassDark" className="p-0 overflow-hidden">
-                <img src="https://images.unsplash.com/photo-1517245386807-bb43f82c33c4?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1740&q=80" alt="Resume analysis visualization" className="w-full h-auto object-cover" />
-              </Card>
-            </motion.div>
-          </div>
-        </Container>
-      </section>
 
-      <section className="py-16">
-        <Container>
-          <motion.div className="text-center mb-12" initial={{
-          opacity: 0,
-          y: 20
-        }} whileInView={{
-          opacity: 1,
-          y: 0
-        }} viewport={{
-          once: true
-        }} transition={{
-          duration: 0.6
-        }}>
-            <h2 className="text-3xl md:text-4xl font-bold mb-4">
-              Ready to{' '}
-              <span className="text-secondary text-glow-secondary">Boost</span>{' '}
-              Your Career?
-            </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Get started today and discover the perfect career opportunities
-              that match your skills and experience.
-            </p>
-          </motion.div>
-          <motion.div className="flex justify-center" initial={{
-          opacity: 0,
-          scale: 0.9
-        }} whileInView={{
-          opacity: 1,
-          scale: 1
-        }} viewport={{
-          once: true
-        }} transition={{
-          duration: 0.6
-        }}>
-            <Button variant="primary" size="lg" onClick={() => navigate('/upload')}>
-              Analyze My Resume Now
-            </Button>
-          </motion.div>
-        </Container>
-      </section>
-    </PageLayout>;
-};
 export default Landing;
