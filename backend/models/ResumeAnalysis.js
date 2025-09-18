@@ -8,6 +8,7 @@ const resumeAnalysisSchema = new mongoose.Schema({
   },
   originalFileName: String,
   fileType: String,
+  originalFileUrl: String,
   
   // Parsed resume data
   personalInfo: {
@@ -155,6 +156,12 @@ const resumeAnalysisSchema = new mongoose.Schema({
   
   keywords: [String],
   overallFeedback: String, // Summary feedback from Gemini
+  
+  // Job search metadata
+  lastJobSearchUpdate: {
+    type: Date,
+    default: Date.now
+  },
   
   // Metadata
   analysisVersion: String,

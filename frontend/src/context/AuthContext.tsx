@@ -16,6 +16,8 @@ interface AuthContextType {
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
   clearError: () => void;
+  updateProfile: (name: string) => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
 }
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const API_URL = 'http://localhost:5000/api';
@@ -71,8 +73,9 @@ export const AuthProvider: React.FC<{
       setToken(token);
       setUser(user);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Login failed');
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -96,8 +99,9 @@ export const AuthProvider: React.FC<{
       setToken(token);
       setUser(user);
       setIsAuthenticated(true);
-    } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Registration failed');
       setIsAuthenticated(false);
     } finally {
       setIsLoading(false);
@@ -109,6 +113,39 @@ export const AuthProvider: React.FC<{
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);
+  };
+  // Update profile
+  const updateProfile = async (name: string) => {
+    if (!token) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await axios.put(`${API_URL}/auth/profile`, { name, email: user?.email }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setUser(prev => prev ? { ...prev, name: res.data.user.name } : prev);
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Profile update failed');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  // Change password
+  const changePassword = async (currentPassword: string, newPassword: string) => {
+    if (!token) return;
+    setIsLoading(true);
+    setError(null);
+    try {
+      await axios.put(`${API_URL}/auth/change-password`, { currentPassword, newPassword }, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+    } catch (err: unknown) {
+      const e = err as { response?: { data?: { message?: string } } };
+      setError(e.response?.data?.message || 'Password change failed');
+    } finally {
+      setIsLoading(false);
+    }
   };
   // Clear error
   const clearError = () => {
@@ -123,11 +160,14 @@ export const AuthProvider: React.FC<{
     login,
     register,
     logout,
-    clearError
+    clearError,
+    updateProfile,
+    changePassword
   }}>
       {children}
     </AuthContext.Provider>;
 };
+// eslint-disable-next-line
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {

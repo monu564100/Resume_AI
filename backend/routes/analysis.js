@@ -3,6 +3,7 @@ const mongoose = require('mongoose');
 const { catchAsync } = require('../utils/catchAsync');
 const { protect } = require('../middleware/auth');
 const ResumeAnalysis = require('../models/ResumeAnalysis');
+const { getJobMatches, getCurrentUserJobMatches } = require('../controllers/analyzeController');
 
 const router = express.Router();
 
@@ -14,7 +15,7 @@ router.get('/history', protect, catchAsync(async (req, res) => {
   const analyses = await ResumeAnalysis.find({ 
     userId: req.user.id 
   })
-  .select('originalFileName atsScore.overall createdAt analysisVersion')
+  .select('originalFileName atsScore.overall createdAt analysisVersion originalFileUrl')
   .sort({ createdAt: -1 })
   .skip(skip)
   .limit(Number(limit));
@@ -33,6 +34,17 @@ router.get('/history', protect, catchAsync(async (req, res) => {
       }
     }
   });
+}));
+
+// Get latest analysis shortcut
+router.get('/latest', protect, catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const ResumeAnalysis = require('../models/ResumeAnalysis');
+  const latest = await ResumeAnalysis.findOne({ userId }).sort({ createdAt: -1 });
+  if (!latest) {
+    return res.json({ success: true, data: null });
+  }
+  res.json({ success: true, data: latest });
 }));
 
 // Get specific analysis by ID
@@ -189,5 +201,9 @@ router.get('/stats/overview', protect, catchAsync(async (req, res) => {
     }
   });
 }));
+
+// Job matches routes
+router.get('/jobs/current', protect, getCurrentUserJobMatches);
+router.get('/:id/jobs', protect, getJobMatches);
 
 module.exports = router;

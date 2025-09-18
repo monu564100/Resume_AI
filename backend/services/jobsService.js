@@ -17,9 +17,9 @@ class JobsService {
         console.log('Using India-specific job search');
         return await this.indiaJobsService.findMatchingJobs(skills, location, 'mid', limit);
       }
-      
-      // For non-Indian locations, use the original logic
+      // For non-Indian locations, try RapidAPI if key present
       if (!this.rapidApiKey || this.rapidApiKey === 'your_rapidapi_key_here') {
+        console.warn('RAPIDAPI_KEY missing – falling back to mock jobs');
         return this.getMockJobs(skills);
       }
 
@@ -37,7 +37,12 @@ class JobsService {
         }
       });
 
-      return this.normalizeLinkedInJobs(response.data.jobs || [], skills);
+      const results = this.normalizeLinkedInJobs(response.data.jobs || [], skills);
+      if (!results.length) {
+        console.warn('RapidAPI returned no jobs, providing mock fallback');
+        return this.getMockJobs(skills);
+      }
+      return results;
     } catch (error) {
       console.error('Jobs API error:', error.message);
       // Fallback to India jobs if available, otherwise mock jobs

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { PageLayout } from '../components/layout/PageLayout';
 import { Container } from '../components/ui/Container';
@@ -6,32 +6,91 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useResume } from '../context/ResumeContext';
 import { useNavigate } from 'react-router-dom';
-import { BriefcaseIcon, SearchIcon, MapPinIcon, DollarSignIcon, FilterIcon, CheckIcon, XIcon, ArrowRightIcon } from 'lucide-react';
+import { BriefcaseIcon, SearchIcon, MapPinIcon, DollarSignIcon, FilterIcon, CheckIcon, XIcon, ArrowRightIcon, Loader2Icon, ExternalLinkIcon } from 'lucide-react';
 
 interface JobListing {
   title: string;
   company: string;
-  matchScore: number;
+  location: string;
+  salary: string;
+  description?: string;
+  url?: string;
+  postedDate?: string;
+  jobType?: string;
+  requirements?: string[];
+  benefits?: string[];
+  matchScore?: number;
   keySkillMatches?: string[];
   missingSkills?: string[];
-  salary: string;
-  location: string;
-  type: string;
+  type?: string;
   remote?: boolean;
 }
+
 const Careers: React.FC = () => {
-  const {
-    resumeData
-  } = useResume();
+  const { resumeData } = useResume();
   const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
+  const [jobs, setJobs] = useState<JobListing[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [filters, setFilters] = useState({
     minMatch: 0,
     location: '',
     showRemote: false
   });
-  // Mock job data (in a real app, this would come from an API)
-  const fallbackJobs: JobListing[] = [
+
+  // Fetch real job matches from backend
+  useEffect(() => {
+    const fetchJobMatches = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+
+        const token = localStorage.getItem('token');
+        if (!token) {
+          setError('Please login to view job matches');
+          setLoading(false);
+          return;
+        }
+
+        const response = await fetch('http://localhost:5000/api/analysis/jobs/current', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) {
+          if (response.status === 404) {
+            setError('No resume analysis found. Please upload and analyze your resume first.');
+          } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          setLoading(false);
+          return;
+        }
+
+        const data = await response.json();
+        if (data.success && data.data?.jobMatches) {
+          setJobs(data.data.jobMatches);
+        } else {
+          setError('No job matches found');
+        }
+      } catch (err) {
+        console.error('Failed to fetch job matches:', err);
+        setError('Failed to load job matches. Please try again.');
+        // Set fallback jobs
+        setJobs(getFallbackJobs());
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchJobMatches();
+  }, []);
+
+  // Fallback job data for when backend is unavailable
+  const getFallbackJobs = (): JobListing[] => [
     {
       title: 'Senior Software Engineer',
       company: 'Tech Innovations Ltd',
@@ -41,7 +100,10 @@ const Careers: React.FC = () => {
       salary: '$120,000 - $150,000',
       location: 'Bangalore, India',
       type: 'Full-time',
-      remote: true
+      remote: true,
+      description: 'Join our dynamic team building innovative solutions...',
+      postedDate: new Date().toISOString(),
+      jobType: 'Full-time'
     },
     {
       title: 'Full Stack Developer',
@@ -52,7 +114,10 @@ const Careers: React.FC = () => {
       salary: '$90,000 - $120,000',
       location: 'Hyderabad, India',
       type: 'Full-time',
-      remote: false
+      remote: false,
+      description: 'Build scalable web applications in a fast-paced startup environment...',
+      postedDate: new Date().toISOString(),
+      jobType: 'Full-time'
     },
     {
       title: 'Frontend Developer',
@@ -63,77 +128,27 @@ const Careers: React.FC = () => {
       salary: '$80,000 - $110,000',
       location: 'Mumbai, India',
       type: 'Full-time',
-      remote: true
-    },
-    {
-      title: 'Backend Engineer',
-      company: 'Data Systems Corp',
-      matchScore: 65,
-      keySkillMatches: ['Node.js', 'SQL', 'Express.js'],
-      missingSkills: ['Python', 'Django', 'PostgreSQL'],
-      salary: '$130,000 - $160,000',
-      location: 'Pune, India',
-      type: 'Full-time',
-      remote: false
-    },
-    {
-      title: 'DevOps Engineer',
-      company: 'Cloud Tech Solutions',
-      matchScore: 70,
-      keySkillMatches: ['Docker', 'AWS', 'Jenkins'],
-      missingSkills: ['Kubernetes', 'Terraform', 'Ansible'],
-      salary: '$110,000 - $140,000',
-      location: 'Chennai, India',
-      type: 'Full-time',
-      remote: true
-    },
-    {
-      title: 'Product Manager',
-      company: 'Innovation Labs',
-      matchScore: 88,
-      keySkillMatches: ['Product Strategy', 'Agile', 'Analytics', 'User Research'],
-      missingSkills: ['Data Science', 'Machine Learning'],
-      salary: '$140,000 - $180,000',
-      location: 'Delhi, India',
-      type: 'Full-time',
-      remote: false
-    },
-    {
-      title: 'UI/UX Designer',
-      company: 'Creative Agency',
-      matchScore: 82,
-      keySkillMatches: ['Figma', 'Adobe XD', 'User Research', 'Prototyping'],
-      missingSkills: ['Motion Design', 'After Effects'],
-      salary: '$70,000 - $95,000',
-      location: 'Gurgaon, India',
-      type: 'Full-time',
-      remote: true
-    },
-    {
-      title: 'Data Scientist',
-      company: 'Analytics Pro',
-      matchScore: 75,
-      keySkillMatches: ['Python', 'Machine Learning', 'SQL', 'Pandas'],
-      missingSkills: ['Deep Learning', 'TensorFlow', 'Apache Spark'],
-      salary: '$100,000 - $130,000',
-      location: 'Bangalore, India',
-      type: 'Full-time',
-      remote: true
+      remote: true,
+      description: 'Create beautiful, responsive user interfaces...',
+      postedDate: new Date().toISOString(),
+      jobType: 'Full-time'
     }
   ];
 
-  const jobListings: JobListing[] = (resumeData?.roleMatches as JobListing[] | undefined)?.length ? (resumeData.roleMatches as JobListing[]) : fallbackJobs;
-  // Filter jobs based on search and filters
-  const filteredJobs = jobListings.filter(job => {
-    return job.title.toLowerCase().includes(searchTerm.toLowerCase()) && job.matchScore >= filters.minMatch;
+  // Filter jobs based on search term and filters
+  const filteredJobs = jobs.filter(job => {
+    const matchesSearch = job.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         job.company.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesLocation = !filters.location || 
+                           job.location.toLowerCase().includes(filters.location.toLowerCase());
+    const matchesRemote = !filters.showRemote || job.remote;
+    const matchesScore = (job.matchScore || 0) >= filters.minMatch;
+    
+    return matchesSearch && matchesLocation && matchesRemote && matchesScore;
   });
+
   const handleFilterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const {
-      name,
-      value,
-      type,
-      checked
-    } = e.target;
+    const { name, value, type, checked } = e.target;
     setFilters(prev => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value
@@ -218,22 +233,39 @@ const Careers: React.FC = () => {
             </div>
             {/* Job Listings */}
             <div className="w-full lg:w-3/4">
-              {filteredJobs.length > 0 ? <div className="space-y-8">
+              {loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <div className="text-center">
+                    <Loader2Icon className="h-8 w-8 animate-spin mx-auto mb-4" />
+                    <p className="text-neutral-600">Loading job matches...</p>
+                  </div>
+                </div>
+              ) : error ? (
+                <div className="text-center py-20">
+                  <div className="bg-red-50 border border-red-200 rounded-lg p-6 mb-4">
+                    <p className="text-red-600 font-medium mb-2">Error Loading Jobs</p>
+                    <p className="text-red-500 text-sm">{error}</p>
+                  </div>
+                  <Button onClick={() => navigate('/upload-analyze')} variant="outline">
+                    Upload & Analyze Resume
+                  </Button>
+                </div>
+              ) : filteredJobs.length > 0 ? <div className="space-y-8">
                   {filteredJobs.map((job, index) => <Card key={index} variant="subtle" className="p-6 hover:shadow-sm transition-all">
                       <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-6 mb-6">
                         <div>
                           <h2 className="text-lg md:text-xl font-semibold tracking-tight mb-1">{job.title}</h2>
                           <p className="text-neutral-600 text-sm mb-2">{job.company}</p>
                           <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-wide font-medium">
-                            <span className="px-2 py-0.5 rounded-md bg-neutral-900 text-white">{job.matchScore}% Match</span>
-                            <span className="px-2 py-0.5 rounded-md bg-neutral-200 text-neutral-800">{job.type}</span>
+                            <span className="px-2 py-0.5 rounded-md bg-neutral-900 text-white">{job.matchScore || 0}% Match</span>
+                            <span className="px-2 py-0.5 rounded-md bg-neutral-200 text-neutral-800">{job.type || job.jobType || 'Full-time'}</span>
                             {job.remote && <span className="px-2 py-0.5 rounded-md bg-white border border-neutral-300 text-neutral-800">Remote</span>}
                           </div>
                         </div>
                         <div className="text-right">
                           <div className="text-xs font-semibold tracking-wide uppercase text-neutral-500 mb-2">Signal Intensity</div>
                           <div className="flex items-center gap-2">
-                            {[0,1,2,3,4].map(i => <span key={i} className={`h-2 w-6 rounded-sm ${i < Math.round(job.matchScore/20) ? 'bg-black' : 'bg-neutral-200'}`} />)}
+                            {[0,1,2,3,4].map(i => <span key={i} className={`h-2 w-6 rounded-sm ${i < Math.round((job.matchScore || 0)/20) ? 'bg-black' : 'bg-neutral-200'}`} />)}
                           </div>
                         </div>
                       </div>
@@ -241,24 +273,54 @@ const Careers: React.FC = () => {
                         <div>
                           <h3 className="text-xs font-semibold tracking-wide uppercase mb-3 flex items-center gap-2"><CheckIcon size={14} /> Matching Skills</h3>
                           <div className="flex flex-wrap gap-2">
-                            {job.keySkillMatches?.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-200 text-neutral-800">{skill}</span>)}
+                            {(job.keySkillMatches || job.requirements || []).map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-200 text-neutral-800">{skill}</span>)}
                           </div>
                         </div>
                         <div>
                           <h3 className="text-xs font-semibold tracking-wide uppercase mb-3 flex items-center gap-2"><XIcon size={14} /> Missing Skills</h3>
                           <div className="flex flex-wrap gap-2">
-                            {job.missingSkills?.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 border border-neutral-300 text-neutral-700">{skill}</span>)}
+                            {(job.missingSkills || []).map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 border border-neutral-300 text-neutral-700">{skill}</span>)}
                           </div>
                         </div>
                       </div>
                       <div className="flex flex-wrap gap-6 text-neutral-600 text-xs mb-8">
                         <div className="flex items-center gap-1"><MapPinIcon size={14} />{job.location}</div>
                         <div className="flex items-center gap-1"><DollarSignIcon size={14} />{job.salary}</div>
-                        <div className="flex items-center gap-1"><BriefcaseIcon size={14} />{job.type}</div>
+                        <div className="flex items-center gap-1"><BriefcaseIcon size={14} />{job.type || job.jobType || 'Full-time'}</div>
+                        {job.postedDate && (
+                          <div className="flex items-center gap-1">
+                            <span>Posted: {new Date(job.postedDate).toLocaleDateString()}</span>
+                          </div>
+                        )}
                       </div>
+                      {job.description && (
+                        <div className="mb-6">
+                          <p className="text-neutral-600 text-sm">{job.description}</p>
+                        </div>
+                      )}
                       <div className="flex justify-between items-center">
-                        <div className="text-[10px] uppercase tracking-wide text-neutral-500">Indexed from role alignment model</div>
-                        <Button variant="outline" size="sm" onClick={() => navigate(`/role/${index}`)} className="flex items-center gap-1">View <ArrowRightIcon size={14} /></Button>
+                        <div className="text-[10px] uppercase tracking-wide text-neutral-500">
+                          {job.url && job.url !== '#' ? 'Real job from API' : 'Indexed from role alignment model'}
+                        </div>
+                        {job.url && job.url !== '#' ? (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => window.open(job.url, '_blank')}
+                            className="flex items-center gap-1"
+                          >
+                            Apply <ExternalLinkIcon size={14} />
+                          </Button>
+                        ) : (
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => navigate(`/role/${index}`)} 
+                            className="flex items-center gap-1"
+                          >
+                            View <ArrowRightIcon size={14} />
+                          </Button>
+                        )}
                       </div>
                     </Card>)}
                 </div> : <Card variant="subtle" className="text-center py-16">

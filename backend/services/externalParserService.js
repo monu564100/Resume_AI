@@ -1,5 +1,6 @@
 const axios = require('axios');
 const TextExtractionService = require('./textExtractionService');
+const GeminiService = require('./geminiService');
 
 class ExternalParserService {
   constructor() {
@@ -7,6 +8,7 @@ class ExternalParserService {
     this.rchilliApiKey = process.env.RCHILLI_API_KEY;
     this.preferredProvider = process.env.RESUME_PARSER_PROVIDER || 'local'; // 'affinda', 'rchilli', or 'local'
     this.textExtractor = new TextExtractionService();
+    this.gemini = new GeminiService();
   }
 
   async parseResume(buffer, mimetype, filename) {
@@ -55,7 +57,17 @@ class ExternalParserService {
       }
 
       // Use local parsing with enhanced text extraction
-      return await this.parseLocally(buffer, mimetype, extractedText, extractionMetadata);
+      const baseParsed = await this.parseLocally(buffer, mimetype, extractedText, extractionMetadata);
+      // Gemini enrichment if weak structure
+      try {
+        if (this.gemini.available() && extractedText) {
+          const enriched = await this.gemini.enrichParsedStructure(extractedText, baseParsed);
+          return enriched;
+        }
+      } catch (e) {
+        console.error('Gemini enrichment failed, continuing with base parse:', e.message || e);
+      }
+      return baseParsed;
     } catch (error) {
       console.error('Resume parsing error:', error.message);
       // Return basic structure even on complete failure

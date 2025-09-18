@@ -29,6 +29,11 @@ const UserSchema = new mongoose.Schema({
     enum: ['user', 'admin'],
     default: 'user'
   },
+  latestAnalysisId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ResumeAnalysis',
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now

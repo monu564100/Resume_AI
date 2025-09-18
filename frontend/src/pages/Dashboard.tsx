@@ -36,7 +36,7 @@ const fadeInUp = {
 
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
-  const { resumeData, isDemoMode } = useResume();
+  const { resumeData, isDemoMode, fetchHistory, loadAnalysis } = useResume();
   interface Analysis {
     id: number;
     fileName: string;
@@ -48,39 +48,65 @@ const Dashboard: React.FC = () => {
   roleMatches?: { title?: string }[];
   skills?: { name?: string }[];
   }
+  interface AnalysisWithDbId extends Analysis { _dbId?: string; originalFileUrl?: string }
   const [recentAnalyses, setRecentAnalyses] = useState<Analysis[]>([]);
+  const [isHistoryLoading, setIsHistoryLoading] = useState<boolean>(false);
 
   useEffect(() => {
-    // Load demo data if in demo mode or if resumeData exists
-    if (isDemoMode || resumeData) {
-      setRecentAnalyses([
-        {
-          id: 1,
-          fileName: resumeData?.fileName || 'john_doe_resume.pdf',
-          analyzedAt: '2024-01-15T10:30:00Z',
-          score: resumeData?.overallScore || 85,
-          jobMatches: resumeData?.roleMatches?.length || 5,
-          status: 'completed'
-        },
-        {
-          id: 2,
-          fileName: 'sarah_smith_resume.pdf',
-          analyzedAt: '2024-01-10T14:20:00Z',
-          score: 78,
-          jobMatches: 8,
-          status: 'completed'
-        },
-        {
-          id: 3,
-          fileName: 'mike_johnson_resume.pdf',
-          analyzedAt: '2024-01-08T09:15:00Z',
-          score: 92,
-          jobMatches: 12,
-          status: 'completed'
+    let cancelled = false;
+    const load = async () => {
+      if (isDemoMode) {
+        // Preserve prior demo stub behaviour using resumeData if present
+        if (resumeData) {
+          setRecentAnalyses([
+            {
+              id: 1,
+              fileName: resumeData.fileName || 'demo_resume.pdf',
+              analyzedAt: new Date().toISOString(),
+              score: resumeData.overallScore || resumeData.atsScore?.overall || 85,
+              jobMatches: (resumeData.roleMatches || []).length || (resumeData.jobMatches || []).length || 5,
+              status: 'completed'
+            }
+          ]);
         }
-      ]);
-    }
-  }, [resumeData, isDemoMode]);
+        return;
+      }
+      try {
+        setIsHistoryLoading(true);
+        const history = await fetchHistory(1, 10);
+        if (!history || cancelled) return;
+        type HistoryItem = { _id: string; originalFileName?: string; createdAt: string; atsScore?: { overall?: number }; originalFileUrl?: string };
+        const mapped: AnalysisWithDbId[] = (history.analyses as HistoryItem[]).map((a, idx: number) => ({
+          id: idx + 1,
+          fileName: a.originalFileName || 'resume.pdf',
+          analyzedAt: a.createdAt,
+          score: a.atsScore?.overall || 0,
+          jobMatches: 0,
+          status: 'completed',
+          _dbId: a._id,
+          originalFileUrl: a.originalFileUrl
+        }));
+        // Prepend currently loaded resume if not included
+        if (resumeData && !mapped.find(m => m.fileName === resumeData.fileName)) {
+          mapped.unshift({
+            id: 0,
+            fileName: resumeData.fileName || 'current_resume.pdf',
+            analyzedAt: new Date().toISOString(),
+            score: resumeData.overallScore || resumeData.atsScore?.overall || 0,
+            jobMatches: (resumeData.roleMatches || []).length || (resumeData.jobMatches || []).length || 0,
+            status: 'completed'
+          });
+        }
+        setRecentAnalyses(mapped);
+      } catch (e) {
+        console.error('Failed to load history', e);
+      } finally {
+        setIsHistoryLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [resumeData, isDemoMode, fetchHistory]);
 
   const stats = [
     {
@@ -216,7 +242,13 @@ const Dashboard: React.FC = () => {
                   </Button>
                 </div>
                 <div className="space-y-4">
-                  {recentAnalyses.map((analysis, index) => (
+                  {isHistoryLoading && recentAnalyses.length === 0 && (
+                    <Card variant="subtle" className="p-10 text-center">
+                      <div className="mx-auto mb-4 h-8 w-8 border-2 border-neutral-300 border-t-black rounded-full animate-spin" />
+                      <p className="text-neutral-600 text-sm">Loading analyses...</p>
+                    </Card>
+                  )}
+                  {recentAnalyses.map((analysis) => (
                     <Card key={analysis.id} variant="subtle" className="p-6 hover:shadow-sm transition-colors">
                       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                         <div className="flex items-center gap-4">
@@ -239,19 +271,33 @@ const Dashboard: React.FC = () => {
                             <div className="text-lg font-extrabold tracking-tight">{analysis.jobMatches}</div>
                             <div className="text-[10px] uppercase tracking-wide text-neutral-500">Jobs</div>
                           </div>
+                          <div className="flex items-center gap-2">
+                          {(analysis as AnalysisWithDbId).originalFileUrl && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => window.open((analysis as AnalysisWithDbId).originalFileUrl as string, '_blank')}
+                            >File</Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="sm"
-                            onClick={() => {
-                              if (index === 0 && resumeData) {
+                            onClick={async () => {
+                              const withId = analysis as AnalysisWithDbId;
+                              if (withId._dbId) {
+                                await loadAnalysis(withId._dbId);
+                                localStorage.setItem('currentAnalysisId', withId._dbId);
                                 navigate('/results');
-                              } else {
+                              } else if (resumeData) {
+                                navigate('/results');
+                              } else if (isDemoMode) {
                                 navigate('/upload?demo=true');
                               }
                             }}
                           >
                             View <ArrowRightIcon size={14} className="ml-1" />
                           </Button>
+                          </div>
                         </div>
                       </div>
                     </Card>
@@ -285,7 +331,7 @@ const Dashboard: React.FC = () => {
                       <div>
                         <div className="flex justify-between items-end mb-2">
                           <span className="text-neutral-600 text-sm">Overall Score</span>
-                          <span className="text-2xl font-extrabold tracking-tight">{currentResume.score || currentResume.overallScore}/100</span>
+                          <span className="text-2xl font-extrabold tracking-tight">{Number(currentResume.score || currentResume.overallScore || 0)}/100</span>
                         </div>
                         <div className="w-full h-2 rounded-full bg-neutral-200 overflow-hidden">
                           <div
@@ -296,7 +342,7 @@ const Dashboard: React.FC = () => {
                       </div>
                       <div className="grid grid-cols-2 gap-4 pt-5 border-t border-neutral-300">
                         <div className="text-center">
-                          <div className="text-xl font-extrabold tracking-tight">{currentResume.jobMatches || currentResume.roleMatches?.length || 0}</div>
+                          <div className="text-xl font-extrabold tracking-tight">{Number(currentResume.jobMatches || currentResume.roleMatches?.length || 0)}</div>
                           <div className="text-[10px] uppercase tracking-wide text-neutral-500">Job Matches</div>
                         </div>
                         <div className="text-center">

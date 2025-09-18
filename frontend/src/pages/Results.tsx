@@ -6,27 +6,57 @@ import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useResume } from '../context/ResumeContext';
+import axios from 'axios';
 import { ChevronRightIcon, FileTextIcon, BriefcaseIcon, TrendingUpIcon, BarChart3Icon, AlertCircleIcon } from 'lucide-react';
 const Results: React.FC = () => {
   const navigate = useNavigate();
-  const {
-    resumeData,
-    isDemoMode
-  } = useResume();
-  type SkillObj = { name: string; level?: number; category?: string }; 
-  type RoleMatch = { title: string; company?: string; matchScore: number; keySkillMatches?: string[]; missingSkills?: string[]; salary?: string };
-  type SkillGap = { category: string; missing: string[]; recommendation: string };
-  type ScoreBreakdown = Record<string, number>;
+  const { resumeData, isDemoMode, loadAnalysis } = useResume();
+  const [loadingExternal, setLoadingExternal] = useState(false);
+  const API_URL = 'http://localhost:5000/api';
+  // Local utility types (avoid conflicting with context exported shapes)
+  type SkillObj = { name?: string; level?: number; category?: string };
+  interface PersonalInfo { name?: string; email?: string; phone?: string; location?: string; [k: string]: unknown }
+  interface SimpleRoleMatch { title?: string; company?: string; matchScore?: number; keySkillMatches?: string[]; missingSkills?: string[]; salary?: string }
+  interface SimpleSkillGap { category?: string; missing?: string[]; recommendation?: string }
+  type ScoreBreakdown = Record<string, number | undefined>;
   type ImprovementSuggestion = string | { suggestion?: string; text?: string; category?: string; impact?: string; difficulty?: string; estimatedTime?: string };
   const [activeTab, setActiveTab] = useState<string>('overview');
   // Redirect to upload page if no resume data
   useEffect(() => {
-    if (!resumeData && !isDemoMode) {
-      navigate('/upload');
-    }
-  }, [resumeData, isDemoMode, navigate]);
-  if (!resumeData) {
-    return <div>Loading...</div>;
+    const loadIfMissing = async () => {
+      if (resumeData || isDemoMode) return;
+      const storedId = localStorage.getItem('currentAnalysisId');
+      if (storedId) {
+        setLoadingExternal(true);
+        await loadAnalysis(storedId);
+        setLoadingExternal(false);
+        return;
+      }
+      try {
+        setLoadingExternal(true);
+        const token = localStorage.getItem('token');
+        const res = await axios.get(`${API_URL}/auth/latest-analysis`, { headers: { Authorization: `Bearer ${token}` } });
+        if (res.data?.latestAnalysisId) {
+          localStorage.setItem('currentAnalysisId', res.data.latestAnalysisId);
+          await loadAnalysis(res.data.latestAnalysisId);
+        } else {
+          navigate('/upload');
+        }
+      } catch (e) {
+        navigate('/upload');
+      } finally {
+        setLoadingExternal(false);
+      }
+    };
+    loadIfMissing();
+  }, [resumeData, isDemoMode, loadAnalysis, navigate]);
+  if (!resumeData || loadingExternal) {
+    return <PageLayout>
+      <Container className="py-24 text-center">
+        <h2 className="text-2xl font-bold mb-4">{loadingExternal ? 'Loading saved analysis...' : 'Preparing analysis...'}</h2>
+        <p className="text-neutral-600">Please wait while we load your data.</p>
+      </Container>
+    </PageLayout>;
   }
   // Check if resumeData has been fully parsed (has personalInfo, skills, etc.)
   const isFullyParsed = resumeData.personalInfo && resumeData.skills && resumeData.roleMatches;
@@ -53,16 +83,17 @@ const Results: React.FC = () => {
   }
   // Safe destructuring with fallbacks
   const {
-    personalInfo = {
-      name: 'User',
-      email: 'user@example.com'
-    },
+    personalInfo: rawPersonalInfo,
     skills = [],
     roleMatches = [],
-    overallScore = 0,
-    scoreBreakdown = {},
+    overallScore: rawOverallScore,
+    atsScore,
     improvementSuggestions = []
   } = resumeData;
+
+  const personalInfo = (rawPersonalInfo || {}) as PersonalInfo;
+  const overallScore = (typeof rawOverallScore === 'number' ? rawOverallScore : (resumeData.atsScore?.overall ?? 0)) as number;
+  const scoreBreakdown = (atsScore?.breakdown || {}) as ScoreBreakdown;
   const tabs = [{
     id: 'overview',
     label: 'Overview',
@@ -79,6 +110,10 @@ const Results: React.FC = () => {
     id: 'improvements',
     label: 'Improvements',
     icon: <AlertCircleIcon size={18} />
+  }, {
+    id: 'courses',
+    label: 'Course Suggestions',
+    icon: <FileTextIcon size={18} />
   }];
   return <PageLayout>
       <Container className="py-14">
@@ -91,8 +126,8 @@ const Results: React.FC = () => {
                   <FileTextIcon />
                 </div>
                 <div>
-                  <h2 className="text-lg font-semibold tracking-tight">{personalInfo.name}</h2>
-                  <p className="text-neutral-600 text-xs">{personalInfo.email}</p>
+                  <h2 className="text-lg font-semibold tracking-tight">{personalInfo.name || 'User'}</h2>
+                  <p className="text-neutral-600 text-xs">{personalInfo.email || 'user@example.com'}</p>
                 </div>
               </div>
               <div className="mb-7">
@@ -108,14 +143,14 @@ const Results: React.FC = () => {
                 <div className="mb-8">
                   <h3 className="text-xs font-semibold tracking-wide uppercase mb-4">Score Breakdown</h3>
                   <div className="space-y-4">
-                    {Object.entries(scoreBreakdown as ScoreBreakdown).map(([key, value]) => (
+                    {Object.entries(scoreBreakdown).map(([key, value]) => (
                         <div key={key} className="space-y-1">
                         <div className="flex justify-between text-xs text-neutral-600">
                           <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
-                          <span>{value as number}/100</span>
+                          <span>{(value ?? 0)}/100</span>
                         </div>
                         <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
-                          <div className="h-full bg-black" style={{ width: `${value as number}%` }} />
+                          <div className="h-full bg-black" style={{ width: `${(value ?? 0)}%` }} />
                         </div>
                       </div>
                     ))}
@@ -155,22 +190,22 @@ const Results: React.FC = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Name</p>
-                        <p className="font-medium tracking-tight">{personalInfo.name}</p>
+                        <p className="font-medium tracking-tight">{personalInfo.name || 'User'}</p>
                       </div>
                       <div>
                         <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Email</p>
-                        <p className="font-medium tracking-tight">{personalInfo.email}</p>
+                        <p className="font-medium tracking-tight">{personalInfo.email || 'user@example.com'}</p>
                       </div>
                       <div>
                         <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Phone</p>
                         <p className="font-medium tracking-tight">
-                          {personalInfo.phone || 'Not provided'}
+                          {personalInfo.phone ? String(personalInfo.phone) : 'Not provided'}
                         </p>
                       </div>
                       <div>
                         <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Location</p>
                         <p className="font-medium tracking-tight">
-                          {personalInfo.location || 'Not provided'}
+                          {personalInfo.location ? String(personalInfo.location) : 'Not provided'}
                         </p>
                       </div>
                     </div>
@@ -193,12 +228,12 @@ const Results: React.FC = () => {
                 {roleMatches.length > 0 && <Card variant="subtle" className="mb-10">
                     <h2 className="text-2xl font-extrabold tracking-tight mb-8">Top Career Matches</h2>
                     <div className="space-y-4">
-                      {roleMatches.slice(0, 3).map((role: RoleMatch, index: number) => <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white hover:shadow-sm transition-all">
+                      {(roleMatches as SimpleRoleMatch[]).slice(0, 3).map((role: SimpleRoleMatch, index: number) => <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white hover:shadow-sm transition-all">
                           <div className="flex justify-between items-center mb-2">
                             <h3 className="text-base font-semibold tracking-tight">
                               {role.title}
                             </h3>
-                            <span className="px-2 py-1 rounded-md text-[10px] font-semibold tracking-wide bg-neutral-900 text-white">{role.matchScore}% MATCH</span>
+                            <span className="px-2 py-1 rounded-md text-[10px] font-semibold tracking-wide bg-neutral-900 text-white">{role.matchScore ?? 0}% MATCH</span>
                           </div>
                           <p className="text-neutral-600 mb-3 text-sm">{role.company}</p>
                           <div className="flex flex-wrap gap-2 mb-3">
@@ -284,21 +319,28 @@ const Results: React.FC = () => {
                 {resumeData.skillGaps && resumeData.skillGaps.length > 0 && <Card variant="subtle">
                     <h2 className="text-2xl font-extrabold tracking-tight mb-8">Skill Gaps Analysis</h2>
                     <div className="space-y-6">
-                      {resumeData.skillGaps.map((gap: SkillGap, index: number) => <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white">
-                          <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">{gap.category}</h3>
+                      {(resumeData.skillGaps as (SimpleSkillGap | string)[]).map((gap: SimpleSkillGap | string, index: number) => {
+                        if (typeof gap === 'string') {
+                          return <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white">
+                            <p className="text-neutral-700 text-sm leading-relaxed">{gap}</p>
+                          </div>;
+                        }
+                        return <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white">
+                          <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">{gap.category || 'Skill Gap'}</h3>
                           <div className="mb-4">
                             <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Missing Skills</p>
                             <div className="flex flex-wrap gap-2">
-                              {gap.missing.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-3 py-1 rounded-full text-xs font-medium bg-neutral-200 text-neutral-800">
+                              {gap.missing?.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-3 py-1 rounded-full text-xs font-medium bg-neutral-200 text-neutral-800">
                                   {skill}
                                 </span>)}
                             </div>
                           </div>
-                          <div>
+                          {gap.recommendation && <div>
                             <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Recommendation</p>
                             <p className="text-neutral-700 text-sm leading-relaxed">{gap.recommendation}</p>
-                          </div>
-                        </div>)}
+                          </div>}
+                        </div>;
+                      })}
                     </div>
                   </Card>}
               </motion.div>}
@@ -312,7 +354,7 @@ const Results: React.FC = () => {
                 <Card variant="subtle">
                   <h2 className="text-2xl font-extrabold tracking-tight mb-8">Job Matches</h2>
                   {roleMatches.length > 0 ? <div className="space-y-6">
-                      {roleMatches.map((role: RoleMatch, index: number) => <div key={index} className="rounded-lg p-6 border border-neutral-200 bg-white hover:shadow-sm transition-all">
+                      {(roleMatches as SimpleRoleMatch[]).map((role: SimpleRoleMatch, index: number) => <div key={index} className="rounded-lg p-6 border border-neutral-200 bg-white hover:shadow-sm transition-all">
                           <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
                             <div>
                               <h3 className="text-base font-semibold tracking-tight mb-1">{role.title}</h3>
@@ -320,7 +362,7 @@ const Results: React.FC = () => {
                             </div>
                             <div className="mt-4 md:mt-0 flex items-center gap-4">
                               <div className="w-14 h-14 rounded-full border border-neutral-300 flex items-center justify-center bg-white">
-                                <span className="text-lg font-extrabold tracking-tight">{role.matchScore}%</span>
+                                <span className="text-lg font-extrabold tracking-tight">{role.matchScore ?? 0}%</span>
                               </div>
                               <span className="text-neutral-500 text-xs uppercase tracking-wide">Match Score</span>
                             </div>
@@ -337,7 +379,7 @@ const Results: React.FC = () => {
                             <div>
                               <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Missing Skills</p>
                               <div className="flex flex-wrap gap-2">
-                                {role.missingSkills?.map((skill, skillIndex) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-700 border border-neutral-300">
+                                {role.missingSkills?.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-700 border border-neutral-300">
                                       {skill}
                                     </span>)}
                               </div>
@@ -410,6 +452,75 @@ const Results: React.FC = () => {
                       </div>
                     ))}
                   </div>
+                </Card>
+              </motion.div>}
+            {activeTab === 'courses' && <motion.div initial={{
+            opacity: 0
+          }} animate={{
+            opacity: 1
+          }} transition={{
+            duration: 0.5
+          }}>
+                <Card variant="subtle" className="mb-10">
+                  <h2 className="text-2xl font-extrabold tracking-tight mb-8">Course Suggestions</h2>
+                  {resumeData.courseSuggestions && resumeData.courseSuggestions.length > 0 ? (
+                    <div className="space-y-6">
+                      {resumeData.courseSuggestions.map((course, index) => (
+                        <div key={index} className="rounded-lg p-6 border border-neutral-200 bg-white hover:shadow-sm transition-all">
+                          <div className="flex flex-col md:flex-row md:justify-between md:items-start mb-4">
+                            <div className="flex-1">
+                              <h3 className="text-lg font-semibold tracking-tight mb-2">{course.title}</h3>
+                              <p className="text-neutral-600 text-sm mb-3">Skill Focus: <span className="font-medium">{course.skill}</span></p>
+                              <p className="text-neutral-600 text-sm mb-3">Provider: <span className="font-medium">{course.provider || 'Online Platform'}</span></p>
+                              {course.duration && (
+                                <p className="text-neutral-600 text-sm mb-3">Duration: <span className="font-medium">{course.duration}</span></p>
+                              )}
+                              {course.level && (
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${
+                                  course.level === 'beginner' ? 'bg-green-100 text-green-800' :
+                                  course.level === 'intermediate' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-red-100 text-red-800'
+                                }`}>
+                                  {course.level.charAt(0).toUpperCase() + course.level.slice(1)}
+                                </span>
+                              )}
+                            </div>
+                            <div className="mt-4 md:mt-0 md:ml-6 flex flex-col items-end">
+                              {course.rating && (
+                                <div className="flex items-center mb-2">
+                                  <span className="text-sm font-medium mr-1">{course.rating}</span>
+                                  <span className="text-yellow-400">★</span>
+                                </div>
+                              )}
+                              {course.price && (
+                                <p className="text-lg font-bold mb-3">{course.price}</p>
+                              )}
+                              {course.url && (
+                                <Button
+                                  variant="solid"
+                                  size="sm"
+                                  onClick={() => window.open(course.url, '_blank')}
+                                >
+                                  View Course
+                                </Button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-12">
+                      <FileTextIcon size={48} className="text-neutral-400 mx-auto mb-4" />
+                      <h3 className="text-xl font-semibold mb-2">No Course Suggestions Available</h3>
+                      <p className="text-neutral-600 mb-6">
+                        Upload and analyze your resume to get personalized course recommendations
+                      </p>
+                      <Button variant="solid" onClick={() => navigate('/upload')}>
+                        Analyze Resume
+                      </Button>
+                    </div>
+                  )}
                 </Card>
               </motion.div>}
           </div>

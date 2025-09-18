@@ -8,10 +8,7 @@ import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import { UserIcon, MailIcon, KeyIcon, LogOutIcon, SaveIcon } from 'lucide-react';
 const Profile: React.FC = () => {
-  const {
-    user,
-    logout
-  } = useAuth();
+  const { user, logout, updateProfile, changePassword, isLoading, error } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name || '');
   const [currentPassword, setCurrentPassword] = useState('');
@@ -19,18 +16,28 @@ const Profile: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isEditing, setIsEditing] = useState(false);
   const [isChangingPassword, setIsChangingPassword] = useState(false);
-  const handleUpdateProfile = (e: React.FormEvent) => {
+  const [successMessage, setSuccessMessage] = useState<string>('');
+  const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would update the user profile here
-    setIsEditing(false);
+    await updateProfile(name.trim());
+    if (!error) {
+      setSuccessMessage('Profile updated');
+      setTimeout(()=> setSuccessMessage(''), 3000);
+      setIsEditing(false);
+    }
   };
-  const handleChangePassword = (e: React.FormEvent) => {
+  const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, you would update the password here
-    setIsChangingPassword(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+    if (newPassword !== confirmPassword) return;
+    await changePassword(currentPassword, newPassword);
+    if (!error) {
+      setSuccessMessage('Password changed');
+      setTimeout(()=> setSuccessMessage(''), 3000);
+      setIsChangingPassword(false);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
   };
   const handleLogout = () => {
     logout();
@@ -100,6 +107,7 @@ const Profile: React.FC = () => {
             <div className="w-full md:w-2/3 lg:w-3/4">
               {isEditing ? <Card variant="subtle" className="mb-10 p-8">
                   <h2 className="text-2xl font-semibold tracking-tight mb-2">Edit Profile</h2>
+                  {(error || successMessage) && <div className={`mb-4 text-xs font-medium px-3 py-2 rounded-md border ${error ? 'bg-red-50 text-red-700 border-red-200':'bg-green-50 text-green-700 border-green-200'}`}>{error || successMessage}</div>}
                   <p className="text-neutral-600 text-sm mb-8">Adjust top-level identity attributes. Persistent storage updates occur immediately on submit.</p>
                   <form onSubmit={handleUpdateProfile}>
                     <div className="space-y-6 mb-8">
@@ -115,15 +123,16 @@ const Profile: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
                       <span className="text-[11px] tracking-wide uppercase text-neutral-500">Direct write commit</span>
-                      <Button type="submit" variant="solid" size="sm" className="gap-2">
+                      <Button disabled={isLoading} type="submit" variant="solid" size="sm" className="gap-2">
                         <SaveIcon size={16} />
-                        Save Changes
+                        {isLoading ? 'Saving...' : 'Save Changes'}
                       </Button>
                     </div>
                   </form>
                 </Card> : isChangingPassword ? <Card variant="subtle" className="mb-10 p-8">
                   <h2 className="text-2xl font-semibold tracking-tight mb-2">Change Password</h2>
                   <p className="text-neutral-600 text-sm mb-8">Strengthen credential integrity. New password must meet baseline complexity guidelines.</p>
+                  {(error || successMessage) && <div className={`mb-4 text-xs font-medium px-3 py-2 rounded-md border ${error ? 'bg-red-50 text-red-700 border-red-200':'bg-green-50 text-green-700 border-green-200'}`}>{error || successMessage}</div>}
                   <form onSubmit={handleChangePassword}>
                     <div className="space-y-6 mb-8">
                       <div>
@@ -141,9 +150,9 @@ const Profile: React.FC = () => {
                     </div>
                     <div className="flex justify-between items-center pt-4 border-t border-neutral-200">
                       <span className="text-[11px] tracking-wide uppercase text-neutral-500">Secure hash update</span>
-                      <Button type="submit" variant="solid" size="sm" className="gap-2" disabled={newPassword !== confirmPassword}>
+                      <Button disabled={isLoading || newPassword !== confirmPassword} type="submit" variant="solid" size="sm" className="gap-2" >
                         <SaveIcon size={16} />
-                        Update Password
+                        {isLoading ? 'Updating...' : 'Update Password'}
                       </Button>
                     </div>
                   </form>
