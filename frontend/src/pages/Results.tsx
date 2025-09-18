@@ -13,6 +13,11 @@ const Results: React.FC = () => {
     resumeData,
     isDemoMode
   } = useResume();
+  type SkillObj = { name: string; level?: number; category?: string }; 
+  type RoleMatch = { title: string; company?: string; matchScore: number; keySkillMatches?: string[]; missingSkills?: string[]; salary?: string };
+  type SkillGap = { category: string; missing: string[]; recommendation: string };
+  type ScoreBreakdown = Record<string, number>;
+  type ImprovementSuggestion = string | { suggestion?: string; text?: string; category?: string; impact?: string; difficulty?: string; estimatedTime?: string };
   const [activeTab, setActiveTab] = useState<string>('overview');
   // Redirect to upload page if no resume data
   useEffect(() => {
@@ -27,28 +32,24 @@ const Results: React.FC = () => {
   const isFullyParsed = resumeData.personalInfo && resumeData.skills && resumeData.roleMatches;
   // If not fully parsed, show message that analysis is needed
   if (!isFullyParsed) {
-    return <PageLayout>
-        <Container className="py-12">
-          <Card variant="glass" className="text-center">
-            <h2 className="text-2xl font-bold mb-4">
-              Resume Analysis Required
-            </h2>
-            <p className="text-gray-300 mb-6">
-              Your resume "{resumeData.fileName}" has been uploaded
-              successfully.
-              {isDemoMode ? ' Demo data should be available.' : ' Please analyze it to see detailed results.'}
-            </p>
-            <div className="flex gap-4 justify-center">
-              <Button variant="primary" onClick={() => navigate('/upload')}>
-                Analyze Resume
-              </Button>
-              <Button variant="outline" onClick={() => navigate('/dashboard')}>
-                Go to Dashboard
-              </Button>
+    return (
+      <PageLayout>
+        <Container className="py-16">
+          <Card variant="subtle" className="text-center p-12">
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-neutral-100 border border-neutral-300 mb-8">
+              <span className="h-2 w-2 rounded-full bg-black" />
+              <span className="text-xs font-semibold tracking-wider">ANALYSIS REQUIRED</span>
+            </div>
+            <h2 className="text-3xl font-extrabold tracking-tight mb-4">Resume Analysis Needed</h2>
+            <p className="text-neutral-600 mb-10 max-w-xl mx-auto leading-relaxed">Your file "{resumeData.fileName}" has been uploaded successfully.{isDemoMode ? ' Demo placeholder data should appear.' : ' Run the analyzer to unlock structured results and insights.'}</p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Button variant="solid" onClick={() => navigate('/upload')}>Analyze Resume</Button>
+              <Button variant="outline" onClick={() => navigate('/dashboard')}>Go to Dashboard</Button>
             </div>
           </Card>
         </Container>
-      </PageLayout>;
+      </PageLayout>
+    );
   }
   // Safe destructuring with fallbacks
   const {
@@ -80,53 +81,60 @@ const Results: React.FC = () => {
     icon: <AlertCircleIcon size={18} />
   }];
   return <PageLayout>
-      <Container className="py-12">
-        <div className="flex flex-col md:flex-row gap-8">
+      <Container className="py-14">
+        <div className="flex flex-col md:flex-row gap-10">
           {/* Sidebar */}
           <div className="w-full md:w-1/3 lg:w-1/4">
-            <Card variant="glassDark" className="sticky top-24">
-              <div className="flex items-center mb-6">
-                <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center mr-4">
-                  <FileTextIcon className="text-primary" />
+            <Card variant="muted" className="sticky top-24 p-6">
+              <div className="flex items-center mb-8">
+                <div className="w-12 h-12 rounded-full border border-neutral-300 flex items-center justify-center mr-4 bg-white">
+                  <FileTextIcon />
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold">{personalInfo.name}</h2>
-                  <p className="text-gray-400 text-sm">{personalInfo.email}</p>
+                  <h2 className="text-lg font-semibold tracking-tight">{personalInfo.name}</h2>
+                  <p className="text-neutral-600 text-xs">{personalInfo.email}</p>
                 </div>
               </div>
-              <div className="mb-6">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-gray-300">Overall Score</span>
-                  <span className="text-xl font-bold text-primary">
-                    {overallScore}/100
-                  </span>
+              <div className="mb-7">
+                <div className="flex justify-between items-end mb-2">
+                  <span className="text-neutral-600 text-xs uppercase tracking-wide">Overall Score</span>
+                  <span className="text-2xl font-extrabold tracking-tight">{overallScore}/100</span>
                 </div>
-                <div className="w-full bg-dark-100 rounded-full h-2">
-                  <div className="bg-primary h-2 rounded-full" style={{
-                  width: `${overallScore}%`
-                }}></div>
+                <div className="w-full h-2 rounded-full bg-neutral-200 overflow-hidden">
+                  <div className="h-full bg-black" style={{ width: `${overallScore}%` }} />
                 </div>
               </div>
-              {Object.keys(scoreBreakdown).length > 0 && <div className="mb-6">
-                  <h3 className="text-lg font-semibold mb-3">
-                    Score Breakdown
-                  </h3>
-                  <div className="space-y-3">
-                    {Object.entries(scoreBreakdown).map(([key, value]) => <div key={key} className="flex justify-between items-center">
-                        <span className="text-gray-300 capitalize">
-                          {key.replace(/([A-Z])/g, ' $1')}
-                        </span>
-                        <span className="font-medium">{value}/100</span>
-                      </div>)}
+              {Object.keys(scoreBreakdown).length > 0 && (
+                <div className="mb-8">
+                  <h3 className="text-xs font-semibold tracking-wide uppercase mb-4">Score Breakdown</h3>
+                  <div className="space-y-4">
+                    {Object.entries(scoreBreakdown as ScoreBreakdown).map(([key, value]) => (
+                        <div key={key} className="space-y-1">
+                        <div className="flex justify-between text-xs text-neutral-600">
+                          <span className="capitalize">{key.replace(/([A-Z])/g, ' $1')}</span>
+                          <span>{value as number}/100</span>
+                        </div>
+                        <div className="h-1.5 bg-neutral-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-black" style={{ width: `${value as number}%` }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                </div>}
+                </div>
+              )}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Navigation</h3>
+                <h3 className="text-xs font-semibold tracking-wide uppercase mb-3">Navigation</h3>
                 <div className="space-y-2">
-                  {tabs.map(tab => <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`w-full text-left px-3 py-2 rounded-md flex items-center transition-colors ${activeTab === tab.id ? 'bg-primary-500/20 text-primary' : 'hover:bg-dark-100 text-gray-300'}`}>
-                      <span className="mr-2">{tab.icon}</span>
+                  {tabs.map(tab => (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full text-left px-3 py-2 rounded-md flex items-center gap-2 text-xs font-medium tracking-wide border transition-all ${activeTab === tab.id ? 'bg-black text-white border-black' : 'bg-white border-neutral-300 hover:bg-neutral-100 text-neutral-600'}`}
+                    >
+                      <span>{tab.icon}</span>
                       {tab.label}
-                    </button>)}
+                    </button>
+                  ))}
                 </div>
               </div>
             </Card>
@@ -140,75 +148,70 @@ const Results: React.FC = () => {
           }} transition={{
             duration: 0.5
           }}>
-                <Card variant="glass" className="mb-8">
-                  <h2 className="text-2xl font-bold mb-6">Resume Overview</h2>
+                <Card variant="subtle" className="mb-10">
+                  <h2 className="text-2xl font-extrabold tracking-tight mb-8">Resume Overview</h2>
                   <div className="mb-6">
-                    <h3 className="text-lg font-semibold mb-3">
-                      Personal Information
-                    </h3>
+                    <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">Personal Information</h3>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
-                        <p className="text-gray-400 text-sm">Name</p>
-                        <p className="font-medium">{personalInfo.name}</p>
+                        <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Name</p>
+                        <p className="font-medium tracking-tight">{personalInfo.name}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Email</p>
-                        <p className="font-medium">{personalInfo.email}</p>
+                        <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Email</p>
+                        <p className="font-medium tracking-tight">{personalInfo.email}</p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Phone</p>
-                        <p className="font-medium">
+                        <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Phone</p>
+                        <p className="font-medium tracking-tight">
                           {personalInfo.phone || 'Not provided'}
                         </p>
                       </div>
                       <div>
-                        <p className="text-gray-400 text-sm">Location</p>
-                        <p className="font-medium">
+                        <p className="text-neutral-500 text-xs uppercase tracking-wide mb-0.5">Location</p>
+                        <p className="font-medium tracking-tight">
                           {personalInfo.location || 'Not provided'}
                         </p>
                       </div>
                     </div>
                   </div>
-                  {resumeData.summary && <div className="mb-6">
-                      <h3 className="text-lg font-semibold mb-3">Summary</h3>
-                      <p className="text-gray-300">{resumeData.summary}</p>
+                  {resumeData.summary && <div className="mb-8">
+                      <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">Summary</h3>
+                      <p className="text-neutral-600 leading-relaxed text-sm">{resumeData.summary}</p>
                     </div>}
                   <div>
-                    <h3 className="text-lg font-semibold mb-3">Key Skills</h3>
+                    <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">Key Skills</h3>
                     {skills.length > 0 ? <div className="flex flex-wrap gap-2">
-                        {skills.slice(0, 8).map((skill, index) => <span key={index} className="bg-dark-100 text-gray-300 px-3 py-1 rounded-full text-sm">
-                            {typeof skill === 'string' ? skill : skill.name}
-                          </span>)}
-                      </div> : <p className="text-gray-400">No skills identified yet.</p>}
+                        {skills.slice(0, 8).map((skill: string | SkillObj, index: number) => (
+                          <span key={index} className="px-3 py-1 rounded-full text-xs font-medium bg-neutral-200 text-neutral-800">
+                            {typeof skill === 'string' ? skill : (skill as SkillObj).name}
+                          </span>
+                        ))}
+                      </div> : <p className="text-neutral-500 text-sm">No skills identified yet.</p>}
                   </div>
                 </Card>
-                {roleMatches.length > 0 && <Card variant="glass" className="mb-8">
-                    <h2 className="text-2xl font-bold mb-6">
-                      Top Career Matches
-                    </h2>
+                {roleMatches.length > 0 && <Card variant="subtle" className="mb-10">
+                    <h2 className="text-2xl font-extrabold tracking-tight mb-8">Top Career Matches</h2>
                     <div className="space-y-4">
-                      {roleMatches.slice(0, 3).map((role, index) => <div key={index} className="bg-dark-50 rounded-lg p-4 hover:bg-dark-100 transition-colors">
+                      {roleMatches.slice(0, 3).map((role: RoleMatch, index: number) => <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white hover:shadow-sm transition-all">
                           <div className="flex justify-between items-center mb-2">
-                            <h3 className="text-lg font-semibold">
+                            <h3 className="text-base font-semibold tracking-tight">
                               {role.title}
                             </h3>
-                            <span className="bg-primary-500/20 text-primary px-2 py-1 rounded-md text-sm font-medium">
-                              {role.matchScore}% Match
-                            </span>
+                            <span className="px-2 py-1 rounded-md text-[10px] font-semibold tracking-wide bg-neutral-900 text-white">{role.matchScore}% MATCH</span>
                           </div>
-                          <p className="text-gray-400 mb-2">{role.company}</p>
-                          <div className="flex flex-wrap gap-2 mb-2">
-                            {role.keySkillMatches?.map((skill, skillIndex) => <span key={skillIndex} className="bg-secondary-500/20 text-secondary-300 px-2 py-0.5 rounded-full text-xs">
+                          <p className="text-neutral-600 mb-3 text-sm">{role.company}</p>
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {role.keySkillMatches?.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-200 text-neutral-800">
                                 {skill}
                               </span>)}
                           </div>
                           <div className="flex justify-between items-center mt-2">
-                            <span className="text-gray-400 text-sm">
+                            <span className="text-neutral-500 text-xs">
                               {role.salary}
                             </span>
-                            <Button variant="ghost" size="sm" onClick={() => navigate(`/role/${index}`)} className="flex items-center">
-                              View Details
-                              <ChevronRightIcon size={16} className="ml-1" />
+                            <Button variant="ghost" size="sm" onClick={() => navigate(`/role/${index}`)} className="flex items-center gap-1">
+                              View <ChevronRightIcon size={14} />
                             </Button>
                           </div>
                         </div>)}
@@ -219,35 +222,25 @@ const Results: React.FC = () => {
                       </Button>
                     </div>
                   </Card>}
-                {improvementSuggestions.length > 0 && <Card variant="glass">
-                    <h2 className="text-2xl font-bold mb-6">
-                      Improvement Suggestions
-                    </h2>
+                {improvementSuggestions.length > 0 && <Card variant="subtle">
+                    <h2 className="text-2xl font-extrabold tracking-tight mb-8">Improvement Suggestions</h2>
                     <div className="space-y-3">
-                      {improvementSuggestions.map((suggestion, index) => {
+                      { (improvementSuggestions as ImprovementSuggestion[]).map((suggestion: ImprovementSuggestion, index: number) => {
                         // Handle both string and object formats
                         const suggestionText = typeof suggestion === 'string' 
                           ? suggestion 
                           : suggestion?.suggestion || suggestion?.text || 'No suggestion available';
                         
                         return (
-                          <div key={index} className="flex items-start">
-                            <div className="flex-shrink-0 h-5 w-5 rounded-full bg-secondary-500/20 flex items-center justify-center mr-3 mt-0.5">
-                              <span className="text-secondary-300 text-xs font-bold">
-                                {index + 1}
-                              </span>
-                            </div>
-                            <div className="flex-1">
-                              <p className="text-gray-300">{suggestionText}</p>
+                          <div key={index} className="flex items-start gap-3">
+                            <div className="flex-shrink-0 h-6 w-6 rounded-md border border-neutral-300 flex items-center justify-center text-[10px] font-semibold bg-white mt-0.5">{index + 1}</div>
+                            <div className="flex-1 text-sm leading-relaxed text-neutral-700">
+                              <p>{suggestionText}</p>
                               {typeof suggestion === 'object' && suggestion?.category && (
-                                <span className="text-xs text-gray-400 mt-1 block">
-                                  Category: {suggestion.category}
-                                </span>
+                                <span className="text-[10px] tracking-wide uppercase text-neutral-500 mt-1 block">Category: {suggestion.category}</span>
                               )}
                               {typeof suggestion === 'object' && suggestion?.impact && (
-                                <span className="text-xs text-secondary-400 mt-1 block">
-                                  Impact: {suggestion.impact}
-                                </span>
+                                <span className="text-[10px] tracking-wide uppercase text-neutral-500 mt-1 block">Impact: {suggestion.impact}</span>
                               )}
                             </div>
                           </div>
@@ -263,30 +256,22 @@ const Results: React.FC = () => {
           }} transition={{
             duration: 0.5
           }}>
-                <Card variant="glass" className="mb-8">
-                  <h2 className="text-2xl font-bold mb-6">Skills Analysis</h2>
+                <Card variant="subtle" className="mb-10">
+                  <h2 className="text-2xl font-extrabold tracking-tight mb-8">Skills Analysis</h2>
                   {skills.length > 0 ? <div className="space-y-6">
-                      {['Programming', 'Framework', 'Backend', 'Frontend', 'Database', 'DevOps', 'Cloud', 'Other'].map(category => {
-                  const categorySkills = skills.filter(skill => typeof skill === 'object' && skill.category === category);
+           {['Programming', 'Framework', 'Backend', 'Frontend', 'Database', 'DevOps', 'Cloud', 'Other'].map((category: string) => {
+         const categorySkills = (skills as (string | SkillObj)[]).filter(skill => typeof skill === 'object' && (skill as SkillObj).category === category) as SkillObj[];
                   if (categorySkills.length === 0) return null;
                   return <div key={category}>
-                            <h3 className="text-lg font-semibold mb-4">
-                              {category}
-                            </h3>
+                            <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">{category}</h3>
                             <div className="space-y-4">
-                              {categorySkills.map((skill, index) => <div key={index} className="space-y-1">
+                               {categorySkills.map((skill: SkillObj, index: number) => <div key={index} className="space-y-1">
                                   <div className="flex justify-between">
-                                    <span className="text-gray-300">
-                                      {skill.name}
-                                    </span>
-                                    <span className="text-gray-400">
-                                      {skill.level}/100
-                                    </span>
+                                    <span className="text-neutral-700 text-sm">{(skill as SkillObj).name}</span>
+                                    <span className="text-neutral-500 text-xs">{(skill as SkillObj).level}/100</span>
                                   </div>
-                                  <div className="w-full bg-dark-100 rounded-full h-2">
-                                    <div className={`h-2 rounded-full ${skill.level >= 80 ? 'bg-primary' : skill.level >= 60 ? 'bg-green-500' : skill.level >= 40 ? 'bg-yellow-500' : 'bg-red-500'}`} style={{
-                            width: `${skill.level}%`
-                          }}></div>
+                                  <div className="w-full h-2 rounded-full bg-neutral-200 overflow-hidden">
+                                    <div className="h-full bg-black" style={{ width: `${(skill as SkillObj).level}%` }} />
                                   </div>
                                 </div>)}
                             </div>
@@ -296,32 +281,22 @@ const Results: React.FC = () => {
                       No skills analysis available yet.
                     </p>}
                 </Card>
-                {resumeData.skillGaps && resumeData.skillGaps.length > 0 && <Card variant="glass">
-                    <h2 className="text-2xl font-bold mb-6">
-                      Skill Gaps Analysis
-                    </h2>
+                {resumeData.skillGaps && resumeData.skillGaps.length > 0 && <Card variant="subtle">
+                    <h2 className="text-2xl font-extrabold tracking-tight mb-8">Skill Gaps Analysis</h2>
                     <div className="space-y-6">
-                      {resumeData.skillGaps.map((gap, index) => <div key={index} className="bg-dark-50 rounded-lg p-4">
-                          <h3 className="text-lg font-semibold mb-3">
-                            {gap.category}
-                          </h3>
+                      {resumeData.skillGaps.map((gap: SkillGap, index: number) => <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white">
+                          <h3 className="text-sm font-semibold tracking-wide uppercase mb-4">{gap.category}</h3>
                           <div className="mb-4">
-                            <p className="text-gray-400 mb-2">
-                              Missing Skills:
-                            </p>
+                            <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Missing Skills</p>
                             <div className="flex flex-wrap gap-2">
-                              {gap.missing.map((skill, skillIndex) => <span key={skillIndex} className="bg-dark-100 text-gray-300 px-3 py-1 rounded-full text-sm">
+                              {gap.missing.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-3 py-1 rounded-full text-xs font-medium bg-neutral-200 text-neutral-800">
                                   {skill}
                                 </span>)}
                             </div>
                           </div>
                           <div>
-                            <p className="text-gray-400 mb-2">
-                              Recommendation:
-                            </p>
-                            <p className="text-gray-300">
-                              {gap.recommendation}
-                            </p>
+                            <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Recommendation</p>
+                            <p className="text-neutral-700 text-sm leading-relaxed">{gap.recommendation}</p>
                           </div>
                         </div>)}
                     </div>
@@ -334,58 +309,46 @@ const Results: React.FC = () => {
           }} transition={{
             duration: 0.5
           }}>
-                <Card variant="glass">
-                  <h2 className="text-2xl font-bold mb-6">Job Matches</h2>
+                <Card variant="subtle">
+                  <h2 className="text-2xl font-extrabold tracking-tight mb-8">Job Matches</h2>
                   {roleMatches.length > 0 ? <div className="space-y-6">
-                      {roleMatches.map((role, index) => <div key={index} className="bg-dark-50 rounded-lg p-4 hover:bg-dark-100 transition-colors">
-                          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4">
+                      {roleMatches.map((role: RoleMatch, index: number) => <div key={index} className="rounded-lg p-6 border border-neutral-200 bg-white hover:shadow-sm transition-all">
+                          <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6">
                             <div>
-                              <h3 className="text-lg font-semibold">
-                                {role.title}
-                              </h3>
-                              <p className="text-gray-400">{role.company}</p>
+                              <h3 className="text-base font-semibold tracking-tight mb-1">{role.title}</h3>
+                              <p className="text-neutral-600 text-sm">{role.company}</p>
                             </div>
-                            <div className="mt-2 md:mt-0 flex items-center">
-                              <div className="w-16 h-16 rounded-full bg-dark-300 flex items-center justify-center mr-3">
-                                <span className="text-xl font-bold text-primary">
-                                  {role.matchScore}%
-                                </span>
+                            <div className="mt-4 md:mt-0 flex items-center gap-4">
+                              <div className="w-14 h-14 rounded-full border border-neutral-300 flex items-center justify-center bg-white">
+                                <span className="text-lg font-extrabold tracking-tight">{role.matchScore}%</span>
                               </div>
-                              <span className="text-gray-300">Match Score</span>
+                              <span className="text-neutral-500 text-xs uppercase tracking-wide">Match Score</span>
                             </div>
                           </div>
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                             <div>
-                              <p className="text-gray-400 mb-2">
-                                Key Skill Matches:
-                              </p>
+                              <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Key Skill Matches</p>
                               <div className="flex flex-wrap gap-2">
-                                {role.keySkillMatches?.map((skill, skillIndex) => <span key={skillIndex} className="bg-secondary-500/20 text-secondary-300 px-2 py-0.5 rounded-full text-xs">
+                                {role.keySkillMatches?.map((skill: string, skillIndex: number) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-200 text-neutral-800">
                                       {skill}
                                     </span>)}
                               </div>
                             </div>
                             <div>
-                              <p className="text-gray-400 mb-2">
-                                Missing Skills:
-                              </p>
+                              <p className="text-neutral-500 text-xs uppercase tracking-wide mb-2">Missing Skills</p>
                               <div className="flex flex-wrap gap-2">
-                                {role.missingSkills?.map((skill, skillIndex) => <span key={skillIndex} className="bg-dark-100 text-gray-300 px-2 py-0.5 rounded-full text-xs">
+                                {role.missingSkills?.map((skill, skillIndex) => <span key={skillIndex} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 text-neutral-700 border border-neutral-300">
                                       {skill}
                                     </span>)}
                               </div>
                             </div>
                           </div>
-                          <div className="flex justify-between items-center">
-                            <span className="text-gray-300">{role.salary}</span>
-                            <Button variant="outline" size="sm" onClick={() => navigate(`/role/${index}`)}>
-                              View Details
-                            </Button>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-neutral-600 text-sm">{role.salary}</span>
+                            <Button variant="outline" size="sm" onClick={() => navigate(`/role/${index}`)}>View Details</Button>
                           </div>
                         </div>)}
-                    </div> : <p className="text-gray-400">
-                      No job matches available yet.
-                    </p>}
+                    </div> : <p className="text-neutral-500 text-sm">No job matches available yet.</p>}
                 </Card>
               </motion.div>}
             {activeTab === 'improvements' && <motion.div initial={{
@@ -395,46 +358,32 @@ const Results: React.FC = () => {
           }} transition={{
             duration: 0.5
           }}>
-                {improvementSuggestions.length > 0 ? <Card variant="glass" className="mb-8">
-                    <h2 className="text-2xl font-bold mb-6">
-                      Resume Improvement Suggestions
-                    </h2>
+                {improvementSuggestions.length > 0 ? <Card variant="subtle" className="mb-10">
+                    <h2 className="text-2xl font-extrabold tracking-tight mb-8">Resume Improvement Suggestions</h2>
                     <div className="space-y-6">
-                      {improvementSuggestions.map((suggestion: any, index: number) => {
+                      {improvementSuggestions.map((suggestion: ImprovementSuggestion, index: number) => {
                         // Handle both string and object formats
                         const suggestionText = typeof suggestion === 'string' 
                           ? suggestion 
                           : suggestion?.suggestion || suggestion?.text || 'No suggestion available';
                         
                         return (
-                          <div key={index} className="bg-dark-50 rounded-lg p-4">
-                            <div className="flex items-start">
-                              <div className="flex-shrink-0 h-8 w-8 rounded-full bg-secondary-500/20 flex items-center justify-center mr-4">
-                                <span className="text-secondary-300 font-bold">
-                                  {index + 1}
-                                </span>
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-gray-300">{suggestionText}</p>
+                          <div key={index} className="rounded-lg p-5 border border-neutral-200 bg-white">
+                            <div className="flex items-start gap-4">
+                              <div className="h-7 w-7 rounded-md border border-neutral-300 flex items-center justify-center text-[11px] font-semibold bg-neutral-50">{index + 1}</div>
+                              <div className="flex-1 text-sm leading-relaxed text-neutral-700">
+                                <p>{suggestionText}</p>
                                 {typeof suggestion === 'object' && suggestion?.category && (
-                                  <span className="text-xs text-gray-400 mt-1 block">
-                                    Category: {suggestion.category}
-                                  </span>
+                                  <span className="text-[10px] tracking-wide uppercase text-neutral-500 mt-1 block">Category: {suggestion.category}</span>
                                 )}
                                 {typeof suggestion === 'object' && suggestion?.impact && (
-                                  <span className="text-xs text-secondary-400 mt-1 block">
-                                    Impact: {suggestion.impact}
-                                  </span>
+                                  <span className="text-[10px] tracking-wide uppercase text-neutral-500 mt-1 block">Impact: {suggestion.impact}</span>
                                 )}
                                 {typeof suggestion === 'object' && suggestion?.difficulty && (
-                                  <span className="text-xs text-gray-500 mt-1 block">
-                                    Difficulty: {suggestion.difficulty}
-                                  </span>
+                                  <span className="text-[10px] tracking-wide uppercase text-neutral-500 mt-1 block">Difficulty: {suggestion.difficulty}</span>
                                 )}
                                 {typeof suggestion === 'object' && suggestion?.estimatedTime && (
-                                  <span className="text-xs text-gray-500 mt-1 block">
-                                    Est. Time: {suggestion.estimatedTime}
-                                  </span>
+                                  <span className="text-[10px] tracking-wide uppercase text-neutral-500 mt-1 block">Est. Time: {suggestion.estimatedTime}</span>
                                 )}
                               </div>
                             </div>
@@ -442,55 +391,45 @@ const Results: React.FC = () => {
                         );
                       })}
                     </div>
-                  </Card> : <Card variant="glass" className="mb-8">
-                    <h2 className="text-2xl font-bold mb-6">
-                      Resume Improvement Suggestions
-                    </h2>
-                    <p className="text-gray-400">
-                      No improvement suggestions available yet.
-                    </p>
+                  </Card> : <Card variant="subtle" className="mb-10">
+                    <h2 className="text-2xl font-extrabold tracking-tight mb-8">Resume Improvement Suggestions</h2>
+                    <p className="text-neutral-500 text-sm">No improvement suggestions available yet.</p>
                   </Card>}
-                <Card variant="glass">
-                  <h2 className="text-2xl font-bold mb-6">Next Steps</h2>
-                  <div className="space-y-4">
-                    <div className="bg-dark-50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold mb-2">
-                        Update Your Resume
-                      </h3>
-                      <p className="text-gray-300 mb-4">
-                        Apply the suggested improvements to your resume to
-                        increase your match scores and stand out to employers.
-                      </p>
-                      <Button variant="primary">Edit Resume</Button>
-                    </div>
-                    <div className="bg-dark-50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold mb-2">
-                        Explore Job Matches
-                      </h3>
-                      <p className="text-gray-300 mb-4">
-                        Review your job matches and learn more about the roles
-                        that best fit your skills and experience.
-                      </p>
-                      <Button variant="outline" onClick={() => setActiveTab('matches')}>
-                        View Job Matches
-                      </Button>
-                    </div>
-                    <div className="bg-dark-50 rounded-lg p-4">
-                      <h3 className="text-lg font-semibold mb-2">
-                        Address Skill Gaps
-                      </h3>
-                      <p className="text-gray-300 mb-4">
-                        Consider learning new skills or improving existing ones
-                        to increase your competitiveness in the job market.
-                      </p>
-                      <Button variant="outline" onClick={() => setActiveTab('skills')}>
-                        View Skill Analysis
-                      </Button>
-                    </div>
+                <Card variant="muted" className="p-8">
+                  <h2 className="text-2xl font-extrabold tracking-tight mb-8">Next Steps</h2>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {[
+                      { title: 'Update Your Resume', body: 'Apply the prioritized improvements to elevate alignment & clarity.', action: () => { /* placeholder future edit handler */ }, label: 'Edit Resume' },
+                      { title: 'Explore Job Matches', body: 'Review high-signal roles and refine target positioning.', action: () => setActiveTab('matches'), label: 'View Job Matches' },
+                      { title: 'Address Skill Gaps', body: 'Select 1–2 strategic capability gaps to reinforce this week.', action: () => setActiveTab('skills'), label: 'View Skill Analysis' }
+                    ].map((card, i) => (
+                      <div key={i} className="rounded-lg border border-neutral-300 bg-white p-5 flex flex-col">
+                        <h3 className="text-sm font-semibold tracking-wide uppercase mb-3">{card.title}</h3>
+                        <p className="text-neutral-600 text-sm leading-relaxed flex-1 mb-4">{card.body}</p>
+                        <Button variant={i===0 ? 'solid':'outline'} size="sm" onClick={card.action}>{card.label}</Button>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               </motion.div>}
           </div>
+        </div>
+        {/* Extended Intelligence Footer Section */}
+        <div className="mt-24">
+          <Card variant="subtle" className="p-10">
+            <div className="max-w-3xl mx-auto text-center mb-10">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-4">Analytical Footnotes</h2>
+              <p className="text-neutral-600 text-sm md:text-base leading-relaxed">All scoring dimensions are heuristic composites blending density, diversity and contextual alignment. Use them as directional guidance rather than absolute measures.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8">
+              {[{t:'Scoring Methodology',d:'Weighted blend of semantic alignment, impact phrasing and structural clarity signals.'},{t:'Data Handling',d:'Ephemeral in-memory processing—raw document content not persistently stored.'},{t:'Iteration Strategy',d:'Prioritize high-yield clarity & alignment adjustments before expanding breadth.'}].map(item=> (
+                <div key={item.t} className="rounded-lg border border-neutral-200 bg-white p-6">
+                  <h3 className="text-sm font-semibold tracking-wide uppercase mb-3">{item.t}</h3>
+                  <p className="text-neutral-600 text-sm leading-relaxed">{item.d}</p>
+                </div>
+              ))}
+            </div>
+          </Card>
         </div>
       </Container>
     </PageLayout>;

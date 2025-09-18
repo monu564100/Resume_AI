@@ -7,6 +7,15 @@ import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useResume } from '../context/ResumeContext';
 import { ArrowLeftIcon, BriefcaseIcon, CheckCircleIcon, XCircleIcon, TrendingUpIcon } from 'lucide-react';
+
+interface RoleMatch {
+  title: string;
+  company: string;
+  matchScore: number;
+  keySkillMatches: string[];
+  missingSkills: string[];
+  salary: string;
+}
 const RoleDetails: React.FC = () => {
   const {
     id
@@ -22,18 +31,16 @@ const RoleDetails: React.FC = () => {
     return null;
   }
   const roleIndex = parseInt(id);
-  const role = resumeData.roleMatches[roleIndex];
+  const role = resumeData.roleMatches[roleIndex] as RoleMatch;
   if (!role) {
     navigate('/results');
     return null;
   }
   // Find skills from resume that match the role
-  const matchedSkills = resumeData.skills.filter(skill => role.keySkillMatches.includes(skill.name));
-  // Calculate percentages for visualization
+  // Primary match score reference
   const matchPercentage = role.matchScore;
-  const missingPercentage = 100 - matchPercentage;
   return <PageLayout>
-      <Container className="py-12">
+      <Container className="py-14">
         <motion.div initial={{
         opacity: 0,
         y: 20
@@ -43,178 +50,134 @@ const RoleDetails: React.FC = () => {
       }} transition={{
         duration: 0.5
       }}>
-          <Button variant="ghost" size="sm" onClick={() => navigate('/results')} className="mb-6 flex items-center">
-            <ArrowLeftIcon size={16} className="mr-2" />
-            Back to Results
-          </Button>
-          <div className="flex flex-col md:flex-row gap-8">
+          <div className="mb-10 flex flex-wrap items-center gap-4">
+            <Button variant="outline" size="sm" onClick={() => navigate('/results')} className="gap-2">
+              <ArrowLeftIcon size={16} />
+              Back
+            </Button>
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-neutral-100 border border-neutral-300 text-[11px] font-semibold tracking-wide uppercase">Role Intelligence</div>
+          </div>
+          <div className="flex flex-col md:flex-row gap-10">
             {/* Main Content */}
             <div className="w-full md:w-2/3">
-              <Card variant="glass" className="mb-8">
-                <div className="flex items-center mb-6">
-                  <div className="w-12 h-12 rounded-full bg-primary-500/20 flex items-center justify-center mr-4">
-                    <BriefcaseIcon className="text-primary" />
+              <Card variant="subtle" className="mb-10 p-8">
+                <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6 mb-10">
+                  <div className="flex items-start gap-5">
+                    <div className="h-14 w-14 rounded-xl bg-neutral-900 text-white flex items-center justify-center">
+                      <BriefcaseIcon />
+                    </div>
+                    <div>
+                      <h1 className="text-3xl font-extrabold tracking-tight mb-2">{role.title}</h1>
+                      <div className="flex flex-wrap gap-2 text-[10px] uppercase tracking-wide font-medium mb-1">
+                        <span className="px-2 py-0.5 rounded-md bg-neutral-900 text-white">{matchPercentage}% Match</span>
+                        <span className="px-2 py-0.5 rounded-md bg-neutral-200 text-neutral-800">{role.company}</span>
+                        <span className="px-2 py-0.5 rounded-md bg-white border border-neutral-300 text-neutral-800">Indexed</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-[11px] uppercase tracking-wide text-neutral-500 mb-2">Signal Distribution</div>
+                    <div className="flex items-center gap-1">
+                      {[0,1,2,3,4].map(i => <span key={i} className={`h-2 w-8 rounded-sm ${i < Math.round(matchPercentage/20) ? 'bg-black' : 'bg-neutral-200'}`} />)}
+                    </div>
+                  </div>
+                </div>
+                <div className="grid md:grid-cols-2 gap-10 mb-12">
+                  <div>
+                    <h2 className="text-sm font-semibold tracking-wide uppercase mb-4">Role Overview</h2>
+                    <p className="text-neutral-600 text-sm leading-relaxed">This {role.title} position at {role.company} aligns strongly with your current capability graph. Weighted skill correlation indicates {matchPercentage}% relevance. Closing residual gap increases senior track optionality.</p>
                   </div>
                   <div>
-                    <h1 className="text-2xl font-bold">{role.title}</h1>
-                    <p className="text-gray-400">{role.company}</p>
+                    <h2 className="text-sm font-semibold tracking-wide uppercase mb-4">Salary Band</h2>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-5 flex items-center justify-between">
+                      <span className="text-2xl font-extrabold tracking-tight">{role.salary}</span>
+                      <span className="text-[10px] uppercase tracking-wide text-neutral-500">Indicative</span>
+                    </div>
                   </div>
                 </div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Role Overview</h2>
-                  <p className="text-gray-300">
-                    This {role.title} position at {role.company} is a great
-                    match for your skills and experience. Based on our analysis,
-                    you have {matchPercentage}% of the required skills for this
-                    role.
-                  </p>
-                </div>
-                <div className="mb-6">
-                  <h2 className="text-xl font-semibold mb-4">Salary Range</h2>
-                  <div className="bg-dark-50 p-4 rounded-lg">
-                    <span className="text-2xl font-bold text-primary">
-                      {role.salary}
-                    </span>
+                <div className="mb-12">
+                  <h2 className="text-sm font-semibold tracking-wide uppercase mb-5">Match Composition</h2>
+                  <div className="mb-6">
+                    <div className="flex justify-between text-[11px] uppercase tracking-wide text-neutral-500 mb-2">
+                      <span>Match Score</span>
+                      <span>{matchPercentage}%</span>
+                    </div>
+                    <div className="h-3 w-full bg-neutral-200 rounded-full overflow-hidden">
+                      <div className="h-full bg-black" style={{ width: `${matchPercentage}%` }} />
+                    </div>
+                  </div>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div>
+                      <h3 className="text-xs font-semibold tracking-wide uppercase mb-3 flex items-center gap-2"><CheckCircleIcon size={16} /> Matching Skills</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {role.keySkillMatches.map((skill: string, index: number) => <span key={index} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-200 text-neutral-800">{skill}</span>)}
+                      </div>
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-semibold tracking-wide uppercase mb-3 flex items-center gap-2"><XCircleIcon size={16} /> Missing Skills</h3>
+                      <div className="flex flex-wrap gap-2">
+                        {role.missingSkills.map((skill: string, index: number) => <span key={index} className="px-2 py-0.5 rounded-full text-[10px] font-medium bg-neutral-100 border border-neutral-300 text-neutral-700">{skill}</span>)}
+                      </div>
+                    </div>
                   </div>
                 </div>
                 <div>
-                  <h2 className="text-xl font-semibold mb-4">
-                    Match Visualization
-                  </h2>
-                  <div className="bg-dark-50 p-4 rounded-lg">
-                    <div className="flex justify-between mb-2">
-                      <span className="text-gray-300">Match Score</span>
-                      <span className="font-medium">{matchPercentage}%</span>
+                  <h2 className="text-sm font-semibold tracking-wide uppercase mb-6">Strategic Elevation</h2>
+                  <div className="grid md:grid-cols-2 gap-8">
+                    <div className="rounded-lg border border-neutral-200 bg-white p-5">
+                      <h3 className="text-xs font-semibold tracking-wide uppercase mb-3 flex items-center gap-2"><TrendingUpIcon size={14} /> Skill Development Plan</h3>
+                      <p className="text-neutral-600 text-sm leading-relaxed mb-4">Focus sequence accelerates delta closure. Prioritize foundational before peripheral capabilities.</p>
+                      <ul className="space-y-3">
+                        {role.missingSkills.map((skill: string, index: number) => <li key={index} className="rounded-md border border-neutral-200 bg-neutral-50 p-3">
+                            <p className="font-medium text-sm mb-1">{skill}</p>
+                            <p className="text-neutral-600 text-xs leading-relaxed">{index === 0 ? `Acquiring ${skill} materially uplifts your near-term alignment score.` : `Integrating ${skill} broadens adjacent role access.`}</p>
+                          </li>)}
+                      </ul>
                     </div>
-                    <div className="w-full h-4 bg-dark-300 rounded-full overflow-hidden mb-6">
-                      <div className="h-full bg-primary" style={{
-                      width: `${matchPercentage}%`
-                    }}></div>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3 flex items-center">
-                          <CheckCircleIcon size={18} className="text-primary mr-2" />
-                          Your Matching Skills
-                        </h3>
-                        <ul className="space-y-2">
-                          {role.keySkillMatches.map((skill, index) => <li key={index} className="flex items-center">
-                              <span className="w-2 h-2 bg-primary rounded-full mr-2"></span>
-                              <span className="text-gray-300">{skill}</span>
-                            </li>)}
-                        </ul>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold mb-3 flex items-center">
-                          <XCircleIcon size={18} className="text-gray-400 mr-2" />
-                          Missing Skills
-                        </h3>
-                        <ul className="space-y-2">
-                          {role.missingSkills.map((skill, index) => <li key={index} className="flex items-center">
-                              <span className="w-2 h-2 bg-gray-500 rounded-full mr-2"></span>
-                              <span className="text-gray-300">{skill}</span>
-                            </li>)}
-                        </ul>
-                      </div>
+                    <div className="rounded-lg border border-neutral-200 bg-white p-5">
+                      <h3 className="text-xs font-semibold tracking-wide uppercase mb-3">Resume Tailoring</h3>
+                      <p className="text-neutral-600 text-sm leading-relaxed mb-4">Precision framing increases screening throughput. Anchor bullets with quant impact before tool listing.</p>
+                      <ul className="space-y-2 text-neutral-700 text-sm">
+                        <li className="flex gap-2"><span className="h-1.5 w-1.5 rounded-full bg-black mt-2" /> Emphasize experience with {role.keySkillMatches.slice(0,3).join(', ')}</li>
+                        <li className="flex gap-2"><span className="h-1.5 w-1.5 rounded-full bg-black mt-2" /> Quantify achievement deltas (before/after metrics)</li>
+                        <li className="flex gap-2"><span className="h-1.5 w-1.5 rounded-full bg-black mt-2" /> Showcase depth project leveraging {role.keySkillMatches[0]}</li>
+                      </ul>
                     </div>
                   </div>
                 </div>
               </Card>
-              <Card variant="glass">
-                <h2 className="text-xl font-semibold mb-4">
-                  How to Improve Your Match
-                </h2>
-                <div className="space-y-6">
-                  <div className="bg-dark-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-3 flex items-center">
-                      <TrendingUpIcon size={18} className="text-secondary mr-2" />
-                      Skill Development Plan
-                    </h3>
-                    <p className="text-gray-300 mb-4">
-                      To increase your match score for this role, focus on
-                      developing these key skills:
-                    </p>
-                    <ul className="space-y-3">
-                      {role.missingSkills.map((skill, index) => <li key={index} className="bg-dark-100 p-3 rounded-lg">
-                          <p className="font-medium text-gray-200 mb-1">
-                            {skill}
-                          </p>
-                          <p className="text-gray-400 text-sm">
-                            {index === 0 ? `Learning ${skill} would significantly increase your match score for this role and similar positions.` : `Adding ${skill} to your skillset will make you more competitive for this position.`}
-                          </p>
-                        </li>)}
-                    </ul>
-                  </div>
-                  <div className="bg-dark-50 p-4 rounded-lg">
-                    <h3 className="text-lg font-semibold mb-3">
-                      Resume Tailoring Tips
-                    </h3>
-                    <p className="text-gray-300 mb-4">
-                      Customize your resume for this specific role by
-                      highlighting these aspects:
-                    </p>
-                    <ul className="space-y-2">
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 bg-secondary rounded-full mr-2 mt-2"></span>
-                        <span className="text-gray-300">
-                          Emphasize your experience with{' '}
-                          {role.keySkillMatches.slice(0, 3).join(', ')}
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 bg-secondary rounded-full mr-2 mt-2"></span>
-                        <span className="text-gray-300">
-                          Quantify your achievements related to these skills
-                          with specific metrics
-                        </span>
-                      </li>
-                      <li className="flex items-start">
-                        <span className="w-2 h-2 bg-secondary rounded-full mr-2 mt-2"></span>
-                        <span className="text-gray-300">
-                          Include relevant projects that showcase your expertise
-                          in {role.keySkillMatches[0]}
-                        </span>
-                      </li>
-                    </ul>
-                  </div>
+              <Card variant="subtle" className="p-8">
+                <h2 className="text-sm font-semibold tracking-wide uppercase mb-6">Application Sequencing</h2>
+                <div className="grid md:grid-cols-3 gap-8">
+                  {[{ h: 'Immediate Targets', d: 'High alignment (>80%) roles—submit within 24h while momentum is high.' }, { h: 'Mid-Band Roles', d: 'Iterate resume phrasing first; submit after one refinement cycle.' }, { h: 'Stretch Roles', d: 'Bridge one core missing capability before outreach.' }].map(item => <div key={item.h} className="rounded-lg border border-neutral-200 bg-white p-5">
+                      <h3 className="text-xs font-semibold tracking-wide uppercase mb-2">{item.h}</h3>
+                      <p className="text-neutral-600 text-sm leading-relaxed">{item.d}</p>
+                    </div>)}
                 </div>
               </Card>
             </div>
             {/* Sidebar */}
             <div className="w-full md:w-1/3">
-              <Card variant="glassDark" className="sticky top-24">
-                <h2 className="text-xl font-semibold mb-4">Apply Now</h2>
-                <p className="text-gray-300 mb-6">
-                  Ready to apply for this {role.title} position at{' '}
-                  {role.company}?
-                </p>
-                <Button variant="primary" fullWidth className="mb-4">
-                  Apply for This Position
-                </Button>
-                <Button variant="outline" fullWidth>
-                  Save for Later
-                </Button>
-                <div className="mt-8 pt-6 border-t border-gray-700">
-                  <h3 className="text-lg font-semibold mb-4">Similar Roles</h3>
+              <Card variant="muted" className="sticky top-24 p-6">
+                <h2 className="text-sm font-semibold tracking-wide uppercase mb-4">Apply Decision</h2>
+                <p className="text-neutral-600 text-sm leading-relaxed mb-6">Ready to advance this opportunity? Initiate tailored submission or park for strategic sequencing.</p>
+                <div className="space-y-3 mb-8">
+                  <Button variant="solid" fullWidth size="sm">Apply Now</Button>
+                  <Button variant="outline" fullWidth size="sm">Save for Later</Button>
+                </div>
+                <div className="pt-6 border-t border-neutral-300">
+                  <h3 className="text-xs font-semibold tracking-wide uppercase mb-4 text-neutral-600">Similar Roles</h3>
                   <div className="space-y-4">
-                    {resumeData.roleMatches.filter((_, idx) => idx !== roleIndex).slice(0, 3).map((similarRole, index) => <div key={index} className="bg-dark-100 p-3 rounded-lg">
-                          <div className="flex justify-between items-center">
-                            <div>
-                              <h4 className="font-medium">
-                                {similarRole.title}
-                              </h4>
-                              <p className="text-gray-400 text-sm">
-                                {similarRole.company}
-                              </p>
-                            </div>
-                            <span className="text-primary font-medium">
-                              {similarRole.matchScore}%
-                            </span>
+                    {resumeData.roleMatches.filter((_: RoleMatch, idx: number) => idx !== roleIndex).slice(0, 3).map((similarRole: RoleMatch, index: number) => <div key={index} className="rounded-lg border border-neutral-200 bg-white p-4">
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <h4 className="font-medium text-sm mb-1">{similarRole.title}</h4>
+                            <p className="text-neutral-600 text-xs">{similarRole.company}</p>
                           </div>
-                          <Button variant="ghost" size="sm" className="mt-2 w-full" onClick={() => navigate(`/role/${resumeData.roleMatches.indexOf(similarRole)}`)}>
-                            View Details
-                          </Button>
-                        </div>)}
+                          <span className="px-2 py-0.5 rounded-md bg-neutral-900 text-white text-[10px] font-medium">{similarRole.matchScore}%</span>
+                        </div>
+                        <Button variant="outline" size="sm" fullWidth className="mt-2" onClick={() => navigate(`/role/${resumeData.roleMatches.indexOf(similarRole)}`)}>View</Button>
+                      </div>)}
                   </div>
                 </div>
               </Card>

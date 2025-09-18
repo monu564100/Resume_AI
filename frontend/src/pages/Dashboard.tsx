@@ -6,17 +6,15 @@ import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { Button } from '../components/ui/Button';
 import { useResume } from '../context/ResumeContext';
-import { 
-  FileTextIcon, 
-  UploadIcon, 
-  BarChart3Icon, 
-  BriefcaseIcon, 
+import {
+  FileTextIcon,
+  UploadIcon,
+  BarChart3Icon,
+  BriefcaseIcon,
   TrendingUpIcon,
   UserIcon,
-  StarIcon,
   ArrowRightIcon,
   AlertCircleIcon,
-  ClockIcon,
   TargetIcon
 } from 'lucide-react';
 
@@ -39,7 +37,18 @@ const fadeInUp = {
 const Dashboard: React.FC = () => {
   const navigate = useNavigate();
   const { resumeData, isDemoMode } = useResume();
-  const [recentAnalyses, setRecentAnalyses] = useState<any[]>([]);
+  interface Analysis {
+    id: number;
+    fileName: string;
+    analyzedAt: string;
+    score: number;
+    jobMatches: number;
+    status: string;
+    overallScore?: number;
+  roleMatches?: { title?: string }[];
+  skills?: { name?: string }[];
+  }
+  const [recentAnalyses, setRecentAnalyses] = useState<Analysis[]>([]);
 
   useEffect(() => {
     // Load demo data if in demo mode or if resumeData exists
@@ -77,62 +86,54 @@ const Dashboard: React.FC = () => {
     {
       title: 'Total Analyses',
       value: recentAnalyses.length.toString(),
-      icon: <FileTextIcon size={24} />,
-      change: '+2 this month',
-      color: 'text-primary'
+      icon: <FileTextIcon size={22} />,
+      change: '+2 this month'
     },
     {
       title: 'Average Score',
       value: recentAnalyses.length > 0 ? Math.round(recentAnalyses.reduce((acc, curr) => acc + curr.score, 0) / recentAnalyses.length).toString() : '0',
-      icon: <BarChart3Icon size={24} />,
-      change: '+12% from last month',
-      color: 'text-green-400'
+      icon: <BarChart3Icon size={22} />,
+      change: '+12% vs prev.'
     },
     {
       title: 'Job Matches',
       value: recentAnalyses.reduce((acc, curr) => acc + curr.jobMatches, 0).toString(),
-      icon: <BriefcaseIcon size={24} />,
-      change: '25 new opportunities',
-      color: 'text-blue-400'
+      icon: <BriefcaseIcon size={22} />,
+      change: 'Pipeline +25'
     },
     {
       title: 'Profile Views',
       value: '156',
-      icon: <UserIcon size={24} />,
-      change: '+8% this week',
-      color: 'text-purple-400'
+      icon: <UserIcon size={22} />,
+      change: '+8% this wk'
     }
   ];
 
   const quickActions = [
     {
       title: 'Upload New Resume',
-      description: 'Analyze a new resume with our AI-powered system',
-      icon: <UploadIcon size={32} />,
-      action: () => navigate('/upload'),
-      color: 'bg-primary/10 border-primary/20 hover:bg-primary/20'
+      description: 'Analyze a new resume with the AI engine',
+      icon: <UploadIcon size={30} />,
+      action: () => navigate('/upload')
     },
     {
       title: 'View Results',
-      description: 'Check your latest resume analysis results',
-      icon: <BarChart3Icon size={32} />,
+      description: 'Inspect your latest analysis output',
+      icon: <BarChart3Icon size={30} />,
       action: () => navigate('/results'),
-      color: 'bg-green-500/10 border-green-500/20 hover:bg-green-500/20',
       disabled: !resumeData
     },
     {
       title: 'Browse Jobs',
-      description: 'Explore job opportunities matched to your profile',
-      icon: <BriefcaseIcon size={32} />,
-      action: () => navigate('/careers'),
-      color: 'bg-blue-500/10 border-blue-500/20 hover:bg-blue-500/20'
+      description: 'Discover aligned roles & opportunities',
+      icon: <BriefcaseIcon size={30} />,
+      action: () => navigate('/careers')
     },
     {
       title: 'Update Profile',
-      description: 'Manage your profile and preferences',
-      icon: <UserIcon size={32} />,
-      action: () => navigate('/profile'),
-      color: 'bg-purple-500/10 border-purple-500/20 hover:bg-purple-500/20'
+      description: 'Adjust preferences & visibility',
+      icon: <UserIcon size={30} />,
+      action: () => navigate('/profile')
     }
   ];
 
@@ -140,7 +141,7 @@ const Dashboard: React.FC = () => {
 
   return (
     <PageLayout>
-      <Container className="py-12">
+      <Container className="py-14">
         <motion.div
           variants={staggerContainer}
           initial="hidden"
@@ -148,12 +149,12 @@ const Dashboard: React.FC = () => {
         >
           {/* Header */}
           <motion.div variants={fadeInUp} className="mb-8">
-            <h1 className="text-3xl md:text-4xl font-bold mb-2">
-              Welcome to Your <span className="text-primary">Dashboard</span>
-            </h1>
-            <p className="text-gray-400 text-lg">
-              Track your resume performance and career progress
-            </p>
+            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-neutral-100 border border-neutral-300 mb-6">
+              <span className="h-2 w-2 rounded-full bg-black" />
+              <span className="text-xs font-semibold tracking-wider">DASHBOARD OVERVIEW</span>
+            </div>
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight mb-4">Performance Console</h1>
+            <p className="text-neutral-600 text-base md:text-lg max-w-2xl leading-relaxed">A consolidated operational view of your resume intelligence, iteration momentum and market alignment signals.</p>
           </motion.div>
 
           {/* Stats Grid */}
@@ -163,19 +164,17 @@ const Dashboard: React.FC = () => {
           >
             {stats.map((stat, index) => (
               <motion.div key={index} variants={fadeInUp}>
-                <Card variant="glass" className="p-6 hover:border-primary/30 transition-colors">
-                  <div className="flex items-center justify-between mb-4">
-                    <div className={`p-3 rounded-lg bg-dark-100/50 ${stat.color}`}>
+                <Card variant="subtle" className="p-6 hover:shadow-sm transition-all">
+                  <div className="flex items-start justify-between mb-5">
+                    <div className="p-2.5 rounded-md border border-neutral-300 bg-white text-black">
                       {stat.icon}
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-bold">{stat.value}</div>
-                      <div className="text-sm text-gray-400">{stat.title}</div>
+                      <div className="text-[1.65rem] leading-none font-extrabold tracking-tight">{stat.value}</div>
+                      <div className="text-xs uppercase tracking-wide text-neutral-500 mt-1">{stat.title}</div>
                     </div>
                   </div>
-                  <div className="text-xs text-green-400">
-                    {stat.change}
-                  </div>
+                  <div className="text-xs font-medium text-neutral-600">{stat.change}</div>
                 </Card>
               </motion.div>
             ))}
@@ -186,24 +185,21 @@ const Dashboard: React.FC = () => {
             <div className="lg:col-span-2 space-y-8">
               {/* Quick Actions */}
               <motion.div variants={fadeInUp}>
-                <h2 className="text-2xl font-bold mb-6">Quick Actions</h2>
+                <h2 className="text-2xl font-bold mb-6 tracking-tight">Quick Actions</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {quickActions.map((action, index) => (
-                    <Card 
+                    <Card
                       key={index}
-                      variant="glass" 
-                      className={`p-6 cursor-pointer transition-all duration-300 ${action.color} ${
-                        action.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'
-                      }`}
+                      variant="subtle"
+                      as={action.disabled ? 'div' : 'button'}
                       onClick={action.disabled ? undefined : action.action}
+                      className={`p-5 text-left border border-neutral-300 hover:shadow-sm group transition-all duration-300 ${action.disabled ? 'opacity-50 cursor-not-allowed' : 'hover:-translate-y-0.5'}`}
                     >
-                      <div className="flex items-start space-x-4">
-                        <div className="flex-shrink-0">
-                          {action.icon}
-                        </div>
+                      <div className="flex items-start gap-4">
+                        <div className="p-2 rounded-md border border-neutral-300 bg-white text-black group-hover:scale-105 transition-transform">{action.icon}</div>
                         <div>
-                          <h3 className="text-lg font-semibold mb-2">{action.title}</h3>
-                          <p className="text-gray-400 text-sm">{action.description}</p>
+                          <h3 className="text-base font-semibold mb-1 tracking-tight">{action.title}</h3>
+                          <p className="text-neutral-600 text-xs leading-relaxed">{action.description}</p>
                         </div>
                       </div>
                     </Card>
@@ -214,37 +210,37 @@ const Dashboard: React.FC = () => {
               {/* Recent Analyses */}
               <motion.div variants={fadeInUp}>
                 <div className="flex justify-between items-center mb-6">
-                  <h2 className="text-2xl font-bold">Recent Analyses</h2>
+                  <h2 className="text-2xl font-bold tracking-tight">Recent Analyses</h2>
                   <Button variant="outline" size="sm" onClick={() => navigate('/upload')}>
                     New Analysis
                   </Button>
                 </div>
                 <div className="space-y-4">
                   {recentAnalyses.map((analysis, index) => (
-                    <Card key={analysis.id} variant="glass" className="p-6 hover:border-primary/30 transition-colors">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="p-3 bg-dark-100/50 rounded-lg">
-                            <FileTextIcon size={20} className="text-primary" />
+                    <Card key={analysis.id} variant="subtle" className="p-6 hover:shadow-sm transition-colors">
+                      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2.5 border border-neutral-300 rounded-md bg-white">
+                            <FileTextIcon size={18} />
                           </div>
                           <div>
-                            <h3 className="font-semibold">{analysis.fileName}</h3>
-                            <p className="text-gray-400 text-sm">
-                              Analyzed on {new Date(analysis.analyzedAt).toLocaleDateString()}
+                            <h3 className="font-semibold tracking-tight text-sm md:text-base">{analysis.fileName}</h3>
+                            <p className="text-neutral-600 text-xs">
+                              {new Date(analysis.analyzedAt).toLocaleDateString()}
                             </p>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-6">
+                        <div className="flex items-center gap-8 md:gap-10">
                           <div className="text-center">
-                            <div className="text-lg font-bold text-primary">{analysis.score}</div>
-                            <div className="text-xs text-gray-400">Score</div>
+                            <div className="text-lg font-extrabold tracking-tight">{analysis.score}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-neutral-500">Score</div>
                           </div>
                           <div className="text-center">
-                            <div className="text-lg font-bold text-blue-400">{analysis.jobMatches}</div>
-                            <div className="text-xs text-gray-400">Jobs</div>
+                            <div className="text-lg font-extrabold tracking-tight">{analysis.jobMatches}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-neutral-500">Jobs</div>
                           </div>
-                          <Button 
-                            variant="ghost" 
+                          <Button
+                            variant="ghost"
                             size="sm"
                             onClick={() => {
                               if (index === 0 && resumeData) {
@@ -254,20 +250,20 @@ const Dashboard: React.FC = () => {
                               }
                             }}
                           >
-                            View <ArrowRightIcon size={16} className="ml-1" />
+                            View <ArrowRightIcon size={14} className="ml-1" />
                           </Button>
                         </div>
                       </div>
                     </Card>
                   ))}
                   {recentAnalyses.length === 0 && (
-                    <Card variant="glass" className="p-12 text-center">
-                      <FileTextIcon size={48} className="text-gray-500 mx-auto mb-4" />
+                    <Card variant="subtle" className="p-12 text-center">
+                      <FileTextIcon size={48} className="text-neutral-500 mx-auto mb-4" />
                       <h3 className="text-xl font-semibold mb-2">No Analyses Yet</h3>
-                      <p className="text-gray-400 mb-6">
+                      <p className="text-neutral-600 mb-6">
                         Upload your first resume to get started with AI-powered analysis
                       </p>
-                      <Button variant="primary" onClick={() => navigate('/upload')}>
+                      <Button variant="solid" onClick={() => navigate('/upload')}>
                         Upload Resume
                       </Button>
                     </Card>
@@ -281,43 +277,36 @@ const Dashboard: React.FC = () => {
               {/* Current Resume Status */}
               {currentResume && (
                 <motion.div variants={fadeInUp}>
-                  <Card variant="glassDark" className="p-6">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center">
-                      <TargetIcon size={18} className="mr-2 text-primary" />
-                      Current Resume
+                  <Card variant="muted" className="p-6">
+                    <h3 className="text-lg font-semibold mb-5 flex items-center tracking-tight">
+                      <TargetIcon size={16} className="mr-2" /> Current Resume
                     </h3>
-                    <div className="space-y-4">
+                    <div className="space-y-5">
                       <div>
-                        <div className="flex justify-between items-center mb-2">
-                          <span className="text-gray-300">Overall Score</span>
-                          <span className="text-xl font-bold text-primary">
-                            {currentResume.score || currentResume.overallScore}/100
-                          </span>
+                        <div className="flex justify-between items-end mb-2">
+                          <span className="text-neutral-600 text-sm">Overall Score</span>
+                          <span className="text-2xl font-extrabold tracking-tight">{currentResume.score || currentResume.overallScore}/100</span>
                         </div>
-                        <div className="w-full bg-dark-100 rounded-full h-2">
-                          <div 
-                            className="bg-primary h-2 rounded-full transition-all duration-1000" 
+                        <div className="w-full h-2 rounded-full bg-neutral-200 overflow-hidden">
+                          <div
+                            className="h-full bg-black transition-all duration-1000"
                             style={{ width: `${currentResume.score || currentResume.overallScore}%` }}
                           />
                         </div>
                       </div>
-                      <div className="grid grid-cols-2 gap-4 pt-4 border-t border-gray-700">
+                      <div className="grid grid-cols-2 gap-4 pt-5 border-t border-neutral-300">
                         <div className="text-center">
-                          <div className="text-lg font-bold text-blue-400">
-                            {currentResume.jobMatches || currentResume.roleMatches?.length || 0}
-                          </div>
-                          <div className="text-xs text-gray-400">Job Matches</div>
+                          <div className="text-xl font-extrabold tracking-tight">{currentResume.jobMatches || currentResume.roleMatches?.length || 0}</div>
+                          <div className="text-[10px] uppercase tracking-wide text-neutral-500">Job Matches</div>
                         </div>
                         <div className="text-center">
-                          <div className="text-lg font-bold text-green-400">
-                            {currentResume.skills?.length || 15}
-                          </div>
-                          <div className="text-xs text-gray-400">Skills</div>
+                          <div className="text-xl font-extrabold tracking-tight">{currentResume.skills?.length || 15}</div>
+                          <div className="text-[10px] uppercase tracking-wide text-neutral-500">Skills</div>
                         </div>
                       </div>
-                      <Button 
-                        variant="primary" 
-                        fullWidth 
+                      <Button
+                        variant="solid"
+                        fullWidth
                         size="sm"
                         onClick={() => navigate('/results')}
                       >
@@ -330,32 +319,23 @@ const Dashboard: React.FC = () => {
 
               {/* Recommendations */}
               <motion.div variants={fadeInUp}>
-                <Card variant="glassDark" className="p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <AlertCircleIcon size={18} className="mr-2 text-yellow-400" />
-                    Recommendations
+                <Card variant="muted" className="p-6">
+                  <h3 className="text-lg font-semibold mb-5 flex items-center tracking-tight">
+                    <AlertCircleIcon size={16} className="mr-2" /> Recommendations
                   </h3>
-                  <div className="space-y-3">
-                    <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-primary rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-sm text-gray-300">
-                        Add more quantifiable achievements to your work experience
-                      </p>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-blue-400 rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-sm text-gray-300">
-                        Update your skills section with trending technologies
-                      </p>
-                    </div>
-                    <div className="flex items-start space-x-3">
-                      <div className="w-2 h-2 bg-green-400 rounded-full mt-2 flex-shrink-0" />
-                      <p className="text-sm text-gray-300">
-                        Consider adding a portfolio link to showcase projects
-                      </p>
-                    </div>
+                  <div className="space-y-4">
+                    {[
+                      'Add quantifiable achievement metrics to 2 more roles',
+                      'Refresh skills list to reflect emerging tooling & frameworks',
+                      'Incorporate a portfolio or repository reference link'
+                    ].map(item => (
+                      <div key={item} className="flex items-start gap-3">
+                        <div className="h-2 w-2 rounded-full bg-black mt-2" />
+                        <p className="text-sm text-neutral-700 leading-relaxed">{item}</p>
+                      </div>
+                    ))}
                   </div>
-                  <Button variant="outline" fullWidth size="sm" className="mt-4">
+                  <Button variant="outline" fullWidth size="sm" className="mt-6">
                     View All Suggestions
                   </Button>
                 </Card>
@@ -363,29 +343,94 @@ const Dashboard: React.FC = () => {
 
               {/* Quick Stats */}
               <motion.div variants={fadeInUp}>
-                <Card variant="glassDark" className="p-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center">
-                    <TrendingUpIcon size={18} className="mr-2 text-green-400" />
-                    Performance
+                <Card variant="muted" className="p-6">
+                  <h3 className="text-lg font-semibold mb-5 flex items-center tracking-tight">
+                    <TrendingUpIcon size={16} className="mr-2" /> Performance
                   </h3>
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Profile Views</span>
-                      <span className="font-bold text-green-400">+24%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Application Rate</span>
-                      <span className="font-bold text-blue-400">+12%</span>
-                    </div>
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-300">Interview Calls</span>
-                      <span className="font-bold text-purple-400">+18%</span>
-                    </div>
+                  <div className="space-y-5">
+                    {[
+                      { label: 'Profile Views', value: 24 },
+                      { label: 'Application Rate', value: 12 },
+                      { label: 'Interview Calls', value: 18 }
+                    ].map(metric => (
+                      <div key={metric.label} className="space-y-2">
+                        <div className="flex justify-between text-xs font-medium text-neutral-600"><span>{metric.label}</span><span>+{metric.value}%</span></div>
+                        <div className="h-1.5 w-full bg-neutral-200 rounded-full overflow-hidden">
+                          <div className="h-full bg-black" style={{ width: `${Math.min(metric.value,100)}%` }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </Card>
               </motion.div>
             </div>
           </div>
+
+          {/* Extended Intelligence Section */}
+          <motion.div variants={fadeInUp} className="mt-16">
+            <div className="mb-10 text-center max-w-3xl mx-auto">
+              <h2 className="text-3xl font-extrabold tracking-tight mb-4">Quality Signal Breakdown</h2>
+              <p className="text-neutral-600 leading-relaxed text-sm md:text-base">Deep structural view of resume composition factors to guide targeted refinement cycles.</p>
+            </div>
+            <div className="grid md:grid-cols-3 gap-8 mb-14">
+              {[
+                { title: 'Impact Density', value: 76, desc: 'Ratio of quantified achievement statements to total experience lines.' },
+                { title: 'Skill Surface', value: 64, desc: 'Coverage breadth across core, adjacent & enabling competencies.' },
+                { title: 'Role Alignment', value: 82, desc: 'Semantic affinity to targeted functional & seniority archetypes.' }
+              ].map(block => (
+                <Card key={block.title} variant="subtle" className="p-6 flex flex-col">
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="font-semibold tracking-tight text-sm uppercase">{block.title}</h3>
+                    <span className="text-xl font-extrabold tracking-tight">{block.value}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-neutral-200 overflow-hidden mb-4">
+                    <div className="h-full bg-black" style={{ width: `${block.value}%` }} />
+                  </div>
+                  <p className="text-xs leading-relaxed text-neutral-600 flex-1">{block.desc}</p>
+                </Card>
+              ))}
+            </div>
+            <div className="grid lg:grid-cols-2 gap-10">
+              <Card variant="subtle" className="p-8">
+                <h3 className="text-lg font-semibold tracking-tight mb-5">Iteration Timeline</h3>
+                <div className="space-y-6">
+                  {[
+                    { date: 'Today', label: 'Score recalculated after keyword density optimization' },
+                    { date: '2d ago', label: 'Added quantified metrics to 3 experience entries' },
+                    { date: '5d ago', label: 'Refreshed technical skills cluster taxonomy' },
+                    { date: '1w ago', label: 'Initial baseline analysis created' }
+                  ].map(item => (
+                    <div key={item.date} className="flex gap-4">
+                      <div className="flex flex-col items-center">
+                        <div className="h-3 w-3 rounded-full bg-black mt-1" />
+                        <div className="flex-1 w-px bg-neutral-300" />
+                      </div>
+                      <div>
+                        <div className="text-xs font-medium uppercase tracking-wide text-neutral-500 mb-1">{item.date}</div>
+                        <div className="text-sm leading-relaxed text-neutral-700">{item.label}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </Card>
+              <Card variant="subtle" className="p-8">
+                <h3 className="text-lg font-semibold tracking-tight mb-5">Next Opportunity Focus</h3>
+                <ul className="space-y-5 mb-8">
+                  {[
+                    'Elevate differentiation via impact-first summary line',
+                    'Introduce micro-section for strategic initiatives',
+                    'Consolidate overlapping tool references into families'
+                  ].map(t => (
+                    <li key={t} className="flex gap-3 items-start">
+                      <div className="h-5 w-5 rounded-md border border-neutral-300 flex items-center justify-center text-[10px] font-bold">•</div>
+                      <span className="text-sm leading-relaxed text-neutral-700">{t}</span>
+                    </li>
+                  ))}
+                </ul>
+                <Button variant="solid" size="sm">Generate Action Plan</Button>
+              </Card>
+            </div>
+          </motion.div>
         </motion.div>
       </Container>
     </PageLayout>
