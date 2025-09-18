@@ -7,6 +7,7 @@ const resumeRoutes = require('./routes/resume');
 const userRoutes = require('./routes/user');
 const analyzeRoutes = require('./routes/analyze');
 const analysisRoutes = require('./routes/analysis');
+// const skillsRoutes = require('./routes/skills');
 const testDataRoutes = require('./routes/testData');
 const {
   errorHandler
@@ -29,6 +30,7 @@ app.use('/api/resume', resumeRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api', analyzeRoutes);
 app.use('/api/analysis', analysisRoutes);
+// app.use('/api/skills', skillsRoutes);
 app.use('/api/test', testDataRoutes);
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });

@@ -38,6 +38,9 @@ export function App() {
               <Route path="/upload" element={<ProtectedRoute>
                     <UploadAnalyze />
                   </ProtectedRoute>} />
+              <Route path="/upload-analyze" element={<ProtectedRoute>
+                    <UploadAnalyze />
+                  </ProtectedRoute>} />
               <Route path="/analyze" element={<ProtectedRoute>
                     <Analyze />
                   </ProtectedRoute>} />
