@@ -56,7 +56,7 @@ export const Navbar: React.FC = () => {
   }} transition={{
     duration: 0.5
   }}>
-      <motion.div className="glass-dark" style={{
+      <motion.div className="bg-white/90 backdrop-blur border-b border-neutral-200" style={{
       height,
       opacity,
       borderBottomLeftRadius: '30px',
@@ -67,39 +67,35 @@ export const Navbar: React.FC = () => {
           scale
         }}>
             <div className="flex items-center">
-              <Link to="/" className="flex items-center">
-                <span className="text-primary text-2xl font-bold text-glow-primary">
-                  Resume
-                </span>
-                <span className="text-secondary text-2xl font-bold text-glow-secondary">
-                  Analyzer
-                </span>
+              <Link to="/" className="flex items-center space-x-1">
+                <span className="text-2xl font-bold tracking-tight text-black">Resume</span>
+                <span className="text-2xl font-bold tracking-tight text-neutral-600">Analyzer</span>
               </Link>
             </div>
             {/* Desktop menu */}
             <div className="hidden md:flex md:items-center">
               <div className="flex items-center space-x-4">
-                {links.filter(link => link.public || isAuthenticated).map(link => <Link key={link.name} to={link.path} className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === link.path ? 'text-primary text-glow-primary' : 'text-gray-300 hover:text-white'}`}>
+                {links.filter(link => link.public || isAuthenticated).map(link => <Link key={link.name} to={link.path} className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${location.pathname === link.path ? 'text-black underline' : 'text-neutral-600 hover:text-black'}`}>
                       {link.name}
                     </Link>)}
               </div>
               {isAuthenticated ? <div className="relative ml-4">
-                  <button onClick={toggleProfileMenu} className="flex items-center space-x-2 bg-dark-100 hover:bg-dark-50 rounded-full p-1 focus:outline-none">
-                    <div className="w-8 h-8 rounded-full bg-primary-500/20 flex items-center justify-center">
-                      <UserIcon size={16} className="text-primary" />
+                  <button onClick={toggleProfileMenu} className="flex items-center space-x-2 bg-neutral-100 hover:bg-neutral-200 rounded-full p-1 focus:outline-none border border-neutral-300">
+                    <div className="w-8 h-8 rounded-full bg-neutral-200 flex items-center justify-center">
+                      <UserIcon size={16} className="text-black" />
                     </div>
-                    <span className="text-sm font-medium text-gray-300 pr-2">
+                    <span className="text-sm font-medium text-neutral-700 pr-2">
                       {user?.name?.split(' ')[0]}
                     </span>
                   </button>
-                  {isProfileMenuOpen && <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-dark-50 ring-1 ring-black ring-opacity-5">
-                      <Link to="/profile" className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-100" onClick={() => setIsProfileMenuOpen(false)}>
+                  {isProfileMenuOpen && <div className="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 bg-white border border-neutral-200">
+                      <Link to="/profile" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100" onClick={() => setIsProfileMenuOpen(false)}>
                         Your Profile
                       </Link>
-                      <Link to="/dashboard" className="block px-4 py-2 text-sm text-gray-300 hover:bg-dark-100" onClick={() => setIsProfileMenuOpen(false)}>
+                      <Link to="/dashboard" className="block px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100" onClick={() => setIsProfileMenuOpen(false)}>
                         Dashboard
                       </Link>
-                      <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-dark-100">
+                      <button onClick={handleLogout} className="block w-full text-left px-4 py-2 text-sm text-neutral-700 hover:bg-neutral-100">
                         Sign out
                       </button>
                     </div>}
@@ -110,7 +106,7 @@ export const Navbar: React.FC = () => {
                     </Button>
                   </Link>
                   <Link to="/signup">
-                    <Button variant="primary" size="sm">
+                    <Button variant="solid" size="sm">
                       Sign Up
                     </Button>
                   </Link>
@@ -118,7 +114,7 @@ export const Navbar: React.FC = () => {
             </div>
             {/* Mobile menu button */}
             <div className="md:hidden">
-              <button onClick={toggleMenu} className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-white focus:outline-none" aria-expanded="false">
+              <button onClick={toggleMenu} className="inline-flex items-center justify-center p-2 rounded-md text-neutral-600 hover:text-black focus:outline-none" aria-expanded="false">
                 <span className="sr-only">Open main menu</span>
                 {isMenuOpen ? <XIcon className="block h-6 w-6" /> : <MenuIcon className="block h-6 w-6" />}
               </button>
@@ -127,7 +123,7 @@ export const Navbar: React.FC = () => {
         </div>
       </motion.div>
       {/* Mobile menu, show/hide based on menu state */}
-      {isMenuOpen && <motion.div className="md:hidden glass-dark rounded-b-3xl" initial={{
+      {isMenuOpen && <motion.div className="md:hidden bg-white/95 backdrop-blur border-b border-neutral-200 rounded-b-3xl" initial={{
       opacity: 0,
       height: 0
     }} animate={{
@@ -140,25 +136,25 @@ export const Navbar: React.FC = () => {
       duration: 0.2
     }}>
           <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-            {links.filter(link => link.public || isAuthenticated).map(link => <Link key={link.name} to={link.path} className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === link.path ? 'text-primary text-glow-primary' : 'text-gray-300 hover:text-white'}`} onClick={() => setIsMenuOpen(false)}>
+            {links.filter(link => link.public || isAuthenticated).map(link => <Link key={link.name} to={link.path} className={`block px-3 py-2 rounded-md text-base font-medium ${location.pathname === link.path ? 'text-black underline' : 'text-neutral-600 hover:text-black'}`} onClick={() => setIsMenuOpen(false)}>
                   {link.name}
                 </Link>)}
             {isAuthenticated ? <>
-                <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/profile" className="block px-3 py-2 rounded-md text-base font-medium text-neutral-600 hover:text-black" onClick={() => setIsMenuOpen(false)}>
                   Profile
                 </Link>
                 <button onClick={() => {
             handleLogout();
             setIsMenuOpen(false);
-          }} className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white">
+          }} className="flex items-center w-full px-3 py-2 rounded-md text-base font-medium text-neutral-600 hover:text-black">
                   <LogOutIcon size={16} className="mr-2" />
                   Sign out
                 </button>
               </> : <>
-                <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-gray-300 hover:text-white" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/login" className="block px-3 py-2 rounded-md text-base font-medium text-neutral-600 hover:text-black" onClick={() => setIsMenuOpen(false)}>
                   Login
                 </Link>
-                <Link to="/signup" className="block px-3 py-2 rounded-md text-base font-medium text-primary hover:text-primary-400" onClick={() => setIsMenuOpen(false)}>
+                <Link to="/signup" className="block px-3 py-2 rounded-md text-base font-medium text-black hover:underline" onClick={() => setIsMenuOpen(false)}>
                   Sign Up
                 </Link>
               </>}

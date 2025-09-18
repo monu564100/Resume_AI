@@ -19,7 +19,98 @@ const Careers: React.FC = () => {
     showRemote: false
   });
   // Mock job data (in a real app, this would come from an API)
-  const jobListings = resumeData?.roleMatches || [];
+  const fallbackJobs = [
+    {
+      title: 'Senior Software Engineer',
+      company: 'Tech Innovations Ltd',
+      matchScore: 85,
+      keySkillMatches: ['JavaScript', 'React', 'Node.js', 'TypeScript'],
+      missingSkills: ['Docker', 'Kubernetes'],
+      salary: '$120,000 - $150,000',
+      location: 'Bangalore, India',
+      type: 'Full-time',
+      remote: true
+    },
+    {
+      title: 'Full Stack Developer',
+      company: 'StartupXYZ',
+      matchScore: 78,
+      keySkillMatches: ['Python', 'Django', 'React', 'PostgreSQL'],
+      missingSkills: ['AWS', 'Redis'],
+      salary: '$90,000 - $120,000',
+      location: 'Hyderabad, India',
+      type: 'Full-time',
+      remote: false
+    },
+    {
+      title: 'Frontend Developer',
+      company: 'Digital Solutions Inc',
+      matchScore: 92,
+      keySkillMatches: ['React', 'TypeScript', 'Tailwind CSS', 'Next.js'],
+      missingSkills: ['GraphQL'],
+      salary: '$80,000 - $110,000',
+      location: 'Mumbai, India',
+      type: 'Full-time',
+      remote: true
+    },
+    {
+      title: 'Backend Engineer',
+      company: 'Data Systems Corp',
+      matchScore: 65,
+      keySkillMatches: ['Node.js', 'SQL', 'Express.js'],
+      missingSkills: ['Python', 'Django', 'PostgreSQL'],
+      salary: '$130,000 - $160,000',
+      location: 'Pune, India',
+      type: 'Full-time',
+      remote: false
+    },
+    {
+      title: 'DevOps Engineer',
+      company: 'Cloud Tech Solutions',
+      matchScore: 70,
+      keySkillMatches: ['Docker', 'AWS', 'Jenkins'],
+      missingSkills: ['Kubernetes', 'Terraform', 'Ansible'],
+      salary: '$110,000 - $140,000',
+      location: 'Chennai, India',
+      type: 'Full-time',
+      remote: true
+    },
+    {
+      title: 'Product Manager',
+      company: 'Innovation Labs',
+      matchScore: 88,
+      keySkillMatches: ['Product Strategy', 'Agile', 'Analytics', 'User Research'],
+      missingSkills: ['Data Science', 'Machine Learning'],
+      salary: '$140,000 - $180,000',
+      location: 'Delhi, India',
+      type: 'Full-time',
+      remote: false
+    },
+    {
+      title: 'UI/UX Designer',
+      company: 'Creative Agency',
+      matchScore: 82,
+      keySkillMatches: ['Figma', 'Adobe XD', 'User Research', 'Prototyping'],
+      missingSkills: ['Motion Design', 'After Effects'],
+      salary: '$70,000 - $95,000',
+      location: 'Gurgaon, India',
+      type: 'Full-time',
+      remote: true
+    },
+    {
+      title: 'Data Scientist',
+      company: 'Analytics Pro',
+      matchScore: 75,
+      keySkillMatches: ['Python', 'Machine Learning', 'SQL', 'Pandas'],
+      missingSkills: ['Deep Learning', 'TensorFlow', 'Apache Spark'],
+      salary: '$100,000 - $130,000',
+      location: 'Bangalore, India',
+      type: 'Full-time',
+      remote: true
+    }
+  ];
+
+  const jobListings = resumeData?.roleMatches?.length > 0 ? resumeData.roleMatches : fallbackJobs;
   // Filter jobs based on search and filters
   const filteredJobs = jobListings.filter(job => {
     return job.title.toLowerCase().includes(searchTerm.toLowerCase()) && job.matchScore >= filters.minMatch;

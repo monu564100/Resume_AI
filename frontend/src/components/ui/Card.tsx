@@ -2,36 +2,35 @@ import React from 'react';
 import { motion } from 'framer-motion';
 interface CardProps {
   children: React.ReactNode;
-  variant?: 'glass' | 'glassDark' | 'solid';
+  variant?: 'subtle' | 'muted' | 'solid';
   className?: string;
   animate?: boolean;
+  padded?: boolean;
 }
 export const Card: React.FC<CardProps> = ({
   children,
-  variant = 'glass',
+  variant = 'subtle',
   className = '',
-  animate = true
+  animate = true,
+  padded = true
 }) => {
-  const variantClasses = {
-    glass: 'glass',
-    glassDark: 'glass-dark',
-    solid: 'bg-dark-50'
+  const variantClasses: Record<string, string> = {
+    subtle: 'bg-white border border-neutral-200 shadow-sm',
+    muted: 'bg-neutral-100 border border-neutral-300 shadow-sm',
+    solid: 'bg-neutral-900 text-white border border-neutral-900 shadow'
   };
-  const baseClasses = 'rounded-xl p-6';
+  const baseClasses = `rounded-xl ${padded ? 'p-6' : ''}`;
   if (animate) {
-    return <motion.div className={`${baseClasses} ${variantClasses[variant]} ${className}`} initial={{
-      opacity: 0,
-      y: 20
-    }} animate={{
-      opacity: 1,
-      y: 0
-    }} transition={{
-      duration: 0.4
-    }}>
+    return (
+      <motion.div
+        className={`${baseClasses} ${variantClasses[variant]} ${className}`}
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
         {children}
-      </motion.div>;
+      </motion.div>
+    );
   }
-  return <div className={`${baseClasses} ${variantClasses[variant]} ${className}`}>
-      {children}
-    </div>;
+  return <div className={`${baseClasses} ${variantClasses[variant]} ${className}`}>{children}</div>;
 };
