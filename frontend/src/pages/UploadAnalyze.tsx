@@ -1,15 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { PageLayout } from '../components/layout/PageLayout';
 import { Container } from '../components/ui/Container';
 import { Card } from '../components/ui/Card';
 import { ResumeUploader } from '../components/ResumeUploader';
-import { DynamicIsland } from '../components/DynamicIsland';
 import { Button } from '../components/ui/Button';
 import { useResume } from '../context/ResumeContext';
 import {
-  CheckCircleIcon,
   ArrowRightIcon,
   SparklesIcon,
   FileTextIcon,
@@ -24,18 +22,6 @@ const UploadAnalyze: React.FC = () => {
   const [uploadStatus, setUploadStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
   const [statusMessage, setStatusMessage] = useState<string>('');
   const [progress, setProgress] = useState<number>(0);
-  const [islandSize, setIslandSize] = useState<'collapsed' | 'expanded'>('collapsed');
-  const [analysisSteps, setAnalysisSteps] = useState<{
-    extracting: boolean;
-    analyzing: boolean;
-    matching: boolean;
-    completed: boolean;
-  }>({
-    extracting: false,
-    analyzing: false,
-    matching: false,
-    completed: false
-  });
 
   // Analysis features data
   const analysisFeatures = [
@@ -65,49 +51,40 @@ const UploadAnalyze: React.FC = () => {
     if (isLoading) {
       setUploadStatus('loading');
       setStatusMessage('Processing your resume...');
-      setIslandSize('expanded');
       
-      // Simulate analysis steps
-      const steps = [
-        { key: 'extracting', message: 'Extracting text and analyzing structure...', duration: 2000 },
-        { key: 'analyzing', message: 'AI analyzing skills and experience...', duration: 3000 },
-        { key: 'matching', message: 'Finding job matches in Indian market...', duration: 2000 },
-        { key: 'completed', message: 'Analysis complete!', duration: 1000 }
+      // Simulate progress
+      const progressInterval = setInterval(() => {
+        setProgress(prev => Math.min(prev + 2, 90));
+      }, 300);
+
+      // Update status messages
+      const messages = [
+        'Extracting text and analyzing structure...',
+        'AI analyzing skills and experience...',
+        'Finding job matches in Indian market...',
+        'Finalizing analysis results...'
       ];
 
-      let currentStep = 0;
-      const progressInterval = setInterval(() => {
-        setProgress(prev => Math.min(prev + 5, 90));
-      }, 200);
-
-      const stepInterval = setInterval(() => {
-        if (currentStep < steps.length) {
-          const step = steps[currentStep];
-          setAnalysisSteps(prev => ({ ...prev, [step.key]: true }));
-          setStatusMessage(step.message);
-          currentStep++;
-        } else {
-          clearInterval(stepInterval);
-          clearInterval(progressInterval);
+      let messageIndex = 0;
+      const messageInterval = setInterval(() => {
+        if (messageIndex < messages.length) {
+          setStatusMessage(messages[messageIndex]);
+          messageIndex++;
         }
-      }, 2000);
+      }, 2500);
 
       return () => {
         clearInterval(progressInterval);
-        clearInterval(stepInterval);
+        clearInterval(messageInterval);
       };
     } else if (error) {
       setUploadStatus('error');
       setStatusMessage(error);
-      setIslandSize('expanded');
       setProgress(0);
-      setAnalysisSteps({ extracting: false, analyzing: false, matching: false, completed: false });
     } else if (resumeData) {
       setUploadStatus('success');
       setStatusMessage('Resume processed successfully!');
-      setIslandSize('expanded');
       setProgress(100);
-      setAnalysisSteps({ extracting: true, analyzing: true, matching: true, completed: true });
     }
   }, [isLoading, error, resumeData]);
 
@@ -142,46 +119,24 @@ const UploadAnalyze: React.FC = () => {
             </Card>
           </motion.div>
 
-          {/* Dynamic Island for Progress */}
-          <AnimatePresence>
-            {uploadStatus !== 'idle' && (
-              <motion.div
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: 50 }}
-                className="fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50"
-              >
-                <DynamicIsland
-                  status={uploadStatus}
-                  size={islandSize}
-                  title={uploadStatus === 'loading' ? 'Processing' : uploadStatus === 'success' ? 'Success' : 'Error'}
-                  message={statusMessage}
-                  progress={progress}
-                />
-              </motion.div>
-            )}
-          </AnimatePresence>
+
 
           {/* Analysis Steps */}
           {uploadStatus === 'loading' && (
             <motion.div initial={{opacity:0,y:20}} animate={{opacity:1,y:0}} transition={{delay:.4}} className="mb-16">
               <Card variant="muted" className="p-8 lg:p-10">
-                <h3 className="text-xl font-semibold mb-8 text-center tracking-tight">Analysis Progress</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
-                  {[
-                    { key: 'extracting', label: 'Extraction', icon: <FileTextIcon size={18} /> },
-                    { key: 'analyzing', label: 'Scoring', icon: <BrainIcon size={18} /> },
-                    { key: 'matching', label: 'Matching', icon: <TargetIcon size={18} /> },
-                    { key: 'completed', label: 'Complete', icon: <CheckCircleIcon size={18} /> }
-                  ].map(step => {
-                    const active = analysisSteps[step.key as keyof typeof analysisSteps];
-                    return (
-                      <div key={step.key} className={`flex flex-col items-center p-4 rounded-lg border text-center transition-all ${active ? 'bg-white border-neutral-300 shadow-sm' : 'bg-neutral-100 border-neutral-200'} `}>
-                        <div className={`mb-3 p-2 rounded-md border ${active ? 'bg-black text-white border-black' : 'bg-white text-black border-neutral-300'}`}>{step.icon}</div>
-                        <span className={`text-xs font-medium tracking-wide ${active ? 'text-black' : 'text-neutral-600'}`}>{step.label}</span>
-                      </div>
-                    );
-                  })}
+                <div className="flex flex-col items-center">
+                  <video 
+                    autoPlay 
+                    loop 
+                    muted 
+                    className="w-full max-w-md h-auto rounded-lg shadow-lg mb-6"
+                    style={{ maxHeight: '300px' }}
+                  >
+                    <source src="/src/resources/analyzer.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                  </video>
+                  <p className="text-lg font-medium text-center text-neutral-700 mb-4">{statusMessage}</p>
                 </div>
                 <div className="mt-8 h-2 w-full bg-neutral-200 rounded-full overflow-hidden">
                   <div className="h-full bg-black transition-all" style={{width: `${progress}%`}} />

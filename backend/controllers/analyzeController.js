@@ -236,13 +236,41 @@ function extractAndCategorizeSkills(analysisResult, geminiAnalysis) {
     'Technical': ['api', 'rest', 'graphql', 'microservices', 'devops', 'ci/cd', 'testing', 'agile', 'scrum']
   };
 
+  // Helper function to convert numeric or string skill levels to enum values
+  const normalizeSkillLevel = (level) => {
+    if (typeof level === 'number') {
+      if (level >= 90) return 'Expert';
+      if (level >= 70) return 'Advanced';
+      if (level >= 50) return 'Intermediate';
+      return 'Beginner';
+    }
+    
+    if (typeof level === 'string') {
+      const numericLevel = parseInt(level);
+      if (!isNaN(numericLevel)) {
+        if (numericLevel >= 90) return 'Expert';
+        if (numericLevel >= 70) return 'Advanced';
+        if (numericLevel >= 50) return 'Intermediate';
+        return 'Beginner';
+      }
+      
+      // Handle string levels
+      const levelLower = level.toLowerCase();
+      if (['expert', 'advanced', 'intermediate', 'beginner'].includes(levelLower)) {
+        return level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
+      }
+    }
+    
+    return 'Intermediate'; // Default fallback
+  };
+
   const extractedSkills = [];
   const skills = analysisResult.skills || [];
 
   // Process skills from resume analysis
   skills.forEach(skill => {
     const skillName = typeof skill === 'string' ? skill : skill.name;
-    const skillLevel = skill.level || 'Intermediate';
+    const skillLevel = normalizeSkillLevel(skill.level || 'Intermediate');
     
     if (!skillName) return;
 
@@ -259,7 +287,7 @@ function extractAndCategorizeSkills(analysisResult, geminiAnalysis) {
       }
     }
 
-    // Estimate experience years based on level and context
+    // Estimate experience years based on level
     let experienceYears = 1;
     if (skillLevel === 'Expert') experienceYears = 5;
     else if (skillLevel === 'Advanced') experienceYears = 3;
@@ -294,11 +322,19 @@ function extractAndCategorizeSkills(analysisResult, geminiAnalysis) {
           }
         }
 
+        const skillLevel = normalizeSkillLevel(geminiSkill.level || 'Intermediate');
+        let experienceYears = geminiSkill.experienceYears || 2;
+        
+        // Ensure experienceYears is numeric and reasonable
+        if (typeof experienceYears !== 'number' || experienceYears < 0 || experienceYears > 20) {
+          experienceYears = 2;
+        }
+
         extractedSkills.push({
           name: geminiSkill.name,
-          level: geminiSkill.level || 'Intermediate',
+          level: skillLevel,
           category,
-          experienceYears: geminiSkill.experienceYears || 2,
+          experienceYears,
           verified: true
         });
       }
@@ -672,6 +708,47 @@ exports.analyzeResume = catchAsync(async (req, res) => {
   const keywords = geminiAnalysis?.keywords || extractKeywords(text || parsedData.summary || '');
   const courseSuggestions = geminiAnalysis?.courseSuggestions || suggestCourses(geminiAnalysis?.skillAssessment?.missingSkills || []);
 
+  // Normalize skills data to ensure proper format before storing
+  const normalizeSkillLevel = (level) => {
+    if (typeof level === 'number') {
+      if (level >= 90) return 'Expert';
+      if (level >= 70) return 'Advanced';
+      if (level >= 50) return 'Intermediate';
+      return 'Beginner';
+    }
+    
+    if (typeof level === 'string') {
+      const numericLevel = parseInt(level);
+      if (!isNaN(numericLevel)) {
+        if (numericLevel >= 90) return 'Expert';
+        if (numericLevel >= 70) return 'Advanced';
+        if (numericLevel >= 50) return 'Intermediate';
+        return 'Beginner';
+      }
+      
+      const levelLower = level.toLowerCase();
+      if (['expert', 'advanced', 'intermediate', 'beginner'].includes(levelLower)) {
+        return level.charAt(0).toUpperCase() + level.slice(1).toLowerCase();
+      }
+    }
+    
+    return 'Intermediate';
+  };
+
+  // Normalize parsedData skills to prevent validation errors
+  if (parsedData.skills && Array.isArray(parsedData.skills)) {
+    parsedData.skills = parsedData.skills.map(skill => {
+      if (typeof skill === 'string') {
+        return skill;
+      }
+      
+      return {
+        ...skill,
+        level: skill.level ? normalizeSkillLevel(skill.level) : 'Intermediate'
+      };
+    });
+  }
+
   // Create comprehensive analysis result
   const analysisResult = {
     ...parsedData,
@@ -743,27 +820,51 @@ exports.analyzeResume = catchAsync(async (req, res) => {
         const extractedSkills = extractAndCategorizeSkills(analysisResult, geminiAnalysis);
         
         if (extractedSkills.length > 0) {
-          await UserSkills.createOrUpdate(req.user.id, extractedSkills, savedAnalysis._id);
-          console.log(`💼 Stored ${extractedSkills.length} skills for user ${req.user.id}`);
-          
-          // Add skills summary to analysis result
-          analysisResult.skillsSummary = {
-            totalSkills: extractedSkills.length,
-            categories: extractedSkills.reduce((acc, skill) => {
-              acc[skill.category] = (acc[skill.category] || 0) + 1;
-              return acc;
-            }, {}),
-            topSkills: extractedSkills
-              .sort((a, b) => {
-                const levelWeight = { 'Expert': 4, 'Advanced': 3, 'Intermediate': 2, 'Beginner': 1 };
-                return (levelWeight[b.level] || 1) - (levelWeight[a.level] || 1);
-              })
-              .slice(0, 5)
-              .map(s => s.name)
-          };
+          // Validate skills before saving
+          const validatedSkills = extractedSkills.filter(skill => {
+            const isValid = skill.name && 
+                           ['Beginner', 'Intermediate', 'Advanced', 'Expert'].includes(skill.level) &&
+                           skill.category &&
+                           typeof skill.experienceYears === 'number' &&
+                           skill.experienceYears >= 0 &&
+                           skill.experienceYears <= 50;
+            
+            if (!isValid) {
+              console.warn(`⚠️ Skipping invalid skill:`, skill);
+            }
+            
+            return isValid;
+          });
+
+          if (validatedSkills.length > 0) {
+            await UserSkills.createOrUpdate(req.user.id, validatedSkills, savedAnalysis._id);
+            console.log(`💼 Stored ${validatedSkills.length} validated skills for user ${req.user.id}`);
+            
+            // Add skills summary to analysis result
+            analysisResult.skillsSummary = {
+              totalSkills: validatedSkills.length,
+              categories: validatedSkills.reduce((acc, skill) => {
+                acc[skill.category] = (acc[skill.category] || 0) + 1;
+                return acc;
+              }, {}),
+              topSkills: validatedSkills
+                .sort((a, b) => {
+                  const levelWeight = { 'Expert': 4, 'Advanced': 3, 'Intermediate': 2, 'Beginner': 1 };
+                  return (levelWeight[b.level] || 1) - (levelWeight[a.level] || 1);
+                })
+                .slice(0, 5)
+                .map(s => s.name)
+            };
+          } else {
+            console.warn(`⚠️ No valid skills found to store for user ${req.user.id}`);
+          }
         }
       } catch (skillError) {
-        console.error('❌ Failed to store user skills:', skillError);
+        console.error('❌ Failed to store user skills:', skillError.message);
+        // Don't log the full stack trace for validation errors to reduce noise
+        if (skillError.name !== 'ValidationError') {
+          console.error('Skill storage error details:', skillError);
+        }
       }
     }
 
